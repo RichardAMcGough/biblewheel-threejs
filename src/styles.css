@@ -1,0 +1,332 @@
+/* Bible Wheel React — Global + App Shell + Ported Angular styles */
+
+:root {
+  --bg: #0a0a14;
+  --panel: rgba(20, 20, 35, 0.94);
+  --panel-border: #4a4a70;
+  --gold: #d4b85a;
+  --gold-light: #f5e9b0;
+  --text: #e8e8f0;
+  --text-muted: #a8acc8;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: #0a0a14;
+  color: var(--text);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  overflow: hidden;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  background: rgba(10, 10, 20, 0.95);
+  border-bottom: 1px solid var(--panel-border);
+  z-index: 100;
+  flex-shrink: 0;
+}
+
+.header-left {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.app-header h1 {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--gold);
+}
+
+.subtitle {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.header-right {
+  display: flex;
+  gap: 16px;
+}
+
+.link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 0.85rem;
+  transition: color 0.2s ease;
+}
+
+.link:hover {
+  color: var(--gold-light);
+}
+
+.main {
+  flex: 1;
+  position: relative;
+  min-height: 0;
+}
+
+.app-footer {
+  padding: 8px 20px;
+  background: rgba(10, 10, 20, 0.9);
+  border-top: 1px solid var(--panel-border);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.app-footer p {
+  margin: 0;
+}
+
+/* ============================================
+   Bible Wheel Component Styles (ported from Angular)
+   ============================================ */
+
+.bible-wheel {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 520px;
+  background: radial-gradient(circle at center, #1a1a2e 0%, #0a0a14 100%);
+  overflow: hidden;
+}
+
+.renderer-container {
+  width: 100%;
+  height: 100%;
+}
+
+/* Gear / Options button */
+.gear-btn,
+.division-btn {
+  position: absolute;
+  top: 16px;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: rgba(20, 20, 35, 0.85);
+  color: var(--gold);
+  border: 1px solid var(--panel-border);
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  z-index: 50;
+}
+
+.gear-btn {
+  right: 16px;
+}
+
+.division-btn {
+  right: 62px;
+  font-size: 16px;
+}
+
+.gear-btn:hover,
+.division-btn:hover {
+  background: rgba(40, 40, 65, 0.95);
+}
+
+.gear-btn:hover {
+  transform: rotate(30deg);
+}
+
+.division-btn:hover {
+  transform: scale(1.05);
+}
+
+.gear-btn.open {
+  background: var(--panel-border);
+  color: var(--gold-light);
+}
+
+.division-btn.active {
+  background: var(--gold);
+  color: #1a1a2e;
+  border-color: var(--gold-light);
+}
+
+/* Options panel */
+.options-panel {
+  position: absolute;
+  top: 62px;
+  right: 16px;
+  width: 460px;           /* wider for comfortable controls */
+  padding: 16px 18px 14px;
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  font-family: inherit;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(6px);
+  z-index: 60;
+  max-height: calc(100% - 90px);
+  overflow-y: auto;
+}
+
+.options-panel h3 {
+  margin: 0 0 12px;
+  color: var(--gold);
+  font-size: 1.05em;
+  letter-spacing: 0.04em;
+}
+
+.division-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.division-row:first-of-type {
+  border-top: 0;
+}
+
+.division-row input[type="color"] {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid var(--panel-border);
+  background: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.division-meta {
+  flex: 1;
+  min-width: 0;
+}
+
+.division-label {
+  font-size: 0.92em;
+  font-weight: 600;
+}
+
+.division-range {
+  font-size: 0.78em;
+  color: var(--text-muted);
+}
+
+.panel-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.reset-btn,
+.export-btn,
+.import-btn {
+  flex: 1;
+  padding: 7px 0;
+  cursor: pointer;
+  background: #2a2a44;
+  color: var(--text);
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+  font-size: 0.82em;
+  transition: all 0.15s ease;
+}
+
+.reset-btn:hover {
+  background: #36365a;
+}
+
+.export-btn {
+  color: var(--gold-light);
+}
+
+.export-btn:hover {
+  background: #36365a;
+  color: #fff;
+}
+
+.import-btn:hover {
+  background: #36365a;
+}
+
+/* Info panel */
+.info-panel {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  width: 280px;
+  padding: 16px;
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  font-family: inherit;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  z-index: 40;
+}
+
+.info-panel h3 {
+  margin: 0 0 10px;
+  color: var(--gold);
+  font-size: 1.05em;
+}
+
+.info-panel p {
+  margin: 5px 0;
+  font-size: 0.88em;
+  line-height: 1.35;
+}
+
+.info-panel .meta {
+  color: var(--text-muted);
+  font-size: 0.8em;
+}
+
+.info-panel button {
+  margin-top: 10px;
+  padding: 6px 14px;
+  background: var(--panel-border);
+  color: var(--text);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85em;
+  transition: background 0.15s ease;
+}
+
+.info-panel button:hover {
+  background: #5a5a85;
+}
+
+/* File input hidden for import */
+.hidden-file-input {
+  display: none;
+}

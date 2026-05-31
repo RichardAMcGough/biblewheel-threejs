@@ -1,0 +1,94 @@
+{
+  "version": "1.1",
+  "exportedAt": "2026-05-31T13:17:42.706Z",
+  "divisionColors": {
+    "torah": "#6307ed",
+    "otHistory": "#6e1111",
+    "wisdom": "#6307ed",
+    "majorProphets": "#9467fe",
+    "minorProphets": "#b95f80",
+    "gospels": "#9467fe",
+    "epistles": "#458df2"
+  },
+  "divisionLabelStyles": {
+    "torah": {
+      "fontSize": 2.85,
+      "letterSpacing": 0.143,
+      "font": "english",
+      "centerOffset": 0.033
+    },
+    "otHistory": {
+      "fontSize": 3.25,
+      "letterSpacing": 0.098,
+      "font": "english",
+      "centerOffset": 0.043
+    },
+    "wisdom": {
+      "fontSize": 2.85,
+      "letterSpacing": 0.1,
+      "font": "english",
+      "centerOffset": 0.023
+    },
+    "majorProphets": {
+      "fontSize": 2.2,
+      "letterSpacing": 0.094,
+      "font": "english",
+      "centerOffset": 0.038
+    },
+    "minorProphets": {
+      "fontSize": 2.85,
+      "letterSpacing": 0.164,
+      "font": "english",
+      "centerOffset": 0.058
+    },
+    "gospels": {
+      "fontSize": 2.6,
+      "letterSpacing": 0.089,
+      "font": "english",
+      "centerOffset": 0.023
+    },
+    "epistles": {
+      "fontSize": 2.2,
+      "letterSpacing": 0.227,
+      "font": "english",
+      "centerOffset": 0.015
+    }
+  },
+  "divisions": [
+    {
+      "key": "torah",
+      "label": "Torah",
+      "canonLabel": "TORAHx"
+    },
+    {
+      "key": "otHistory",
+      "label": "OT History",
+      "canonLabel": "OLD TESTAMENT HISTORYx"
+    },
+    {
+      "key": "wisdom",
+      "label": "Wisdom",
+      "canonLabel": "WISDOMx"
+    },
+    {
+      "key": "majorProphets",
+      "label": "Major Prophets",
+      "canonLabel": "MAJOR PROPHETSx"
+    },
+    {
+      "key": "minorProphets",
+      "label": "Minor Prophets",
+      "canonLabel": "MINOR PROPHETSx"
+    },
+    {
+      "key": "gospels",
+      "label": "Gospels & Acts",
+      "canonLabel": "NT HISTORYx"
+    },
+    {
+      "key": "epistles",
+      "label": "Epistles",
+      "canonLabel": ["NEW TESTAMENT", "EPISTLESx"]
+    }
+  ]
+}
