@@ -6,7 +6,7 @@ import { BibleWheelScene } from './BibleWheelScene';
 import { ColorPickerPanel } from './components/ColorPickerPanel';
 import { InfoPanel } from './components/InfoPanel';
 import { ControlButtons } from './components/ControlButtons';
-import { useBibleWheelSettings } from './hooks/useBibleWheelSettings';
+import { useBibleWheelSettings } from './hooks';
 import type {
   BibleWheelBook,
   BibleWheelConfig,

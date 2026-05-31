@@ -16,14 +16,18 @@ import {
   makeBand,
   makeSpokeLines,
 } from './utils/wheelGeometry';
-import { useHebrewRing } from './hooks/useHebrewRing';
-import { useDivisionTransition } from './hooks/useDivisionTransition';
-import { useWheelInteraction } from './hooks/useWheelInteraction';
-import { useWheelAnimation } from './hooks/useWheelAnimation';
+import {
+  useHebrewRing,
+  useDivisionTransition,
+  useWheelInteraction,
+  useWheelAnimation,
+} from './hooks';
 import type {
   BibleWheelConfig,
   WedgeUserData,
   HebrewCellUserData,
+  DivisionBlockUserData,
+  LabelledMeshUserData,
   DivisionKey,
   BibleWheelBook,
 } from './bible-wheel.types';
@@ -428,7 +432,7 @@ export function BibleWheelScene(props: BibleWheelSceneProps) {
     centerGlowRef.current = glow;
 
     crossMaterialsRef.current.forEach(m => {
-      (m.userData as any)['baseEmissive'] = (m as any).emissiveIntensity ?? 0.6;
+      (m.userData as any)['baseEmissive'] = (m as any).emissiveIntensity ?? 0.6; // material userData, not mesh
     });
   }
 
@@ -461,7 +465,8 @@ export function BibleWheelScene(props: BibleWheelSceneProps) {
     // Group wedges by spoke for spoke-hover highlighting
     const spokeWedges: THREE.Mesh[][] = Array.from({ length: 22 }, () => []);
     wedgeMeshesRef.current.forEach(mesh => {
-      const spoke = (mesh.userData as any)?.spoke;
+      const data = mesh.userData as WedgeUserData | undefined;
+      const spoke = data?.spoke;
       if (typeof spoke === 'number') {
         spokeWedges[spoke - 1].push(mesh);
       }
@@ -619,10 +624,10 @@ export function BibleWheelScene(props: BibleWheelSceneProps) {
 
     // Clear label references from the division block meshes (for hover lift)
     divisionTransition.divisionBlockMeshesRef.current.forEach(mesh => {
-      if ((mesh as any).userData) {
-        (mesh as any).userData.labels = [];
-        (mesh as any).userData.labelRestZ = [];
-      }
+      const data = (mesh.userData as LabelledMeshUserData) || {};
+      data.labels = [];
+      data.labelRestZ = [];
+      mesh.userData = data as DivisionBlockUserData;
     });
 
     // Recreate just the labels with fresh per-division styles

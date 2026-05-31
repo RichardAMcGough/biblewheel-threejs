@@ -92,3 +92,20 @@ export function createCurvedText(
     });
   });
 }
+
+/**
+ * Applies the standard "always visible on top" material + renderOrder settings
+ * used for all Troika labels that must survive hover lift and Canon cross-fade.
+ * Centralizes the repeated `transparent + depthTest:false + needsUpdate` block.
+ */
+export function configureTroikaLabelOverlay(label: any, renderOrder = 50): void {
+  label.renderOrder = renderOrder;
+  if (label.material) {
+    const m = label.material as any;
+    m.transparent = true;
+    m.opacity = 1;
+    m.depthTest = false;
+    m.depthWrite = false;
+    m.needsUpdate = true;
+  }
+}

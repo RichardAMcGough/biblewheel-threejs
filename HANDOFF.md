@@ -168,4 +168,16 @@ The Canon Wheel is now the most tunable part of the entire application. The live
 
 This document + a recent backup should let anyone pick up the project and continue refining without losing the hard-won fine-tuning work.
 
+---
+
+## Encapsulation & Maintainability (Post Four-Hook Refactor + Three Follow-ups)
+
+- **BibleWheelScene.tsx** reduced from ~1400 → ~687 lines (orchestrates four focused hooks + small creation helpers).
+- **Four hooks** (useHebrewRing, useDivisionTransition, useWheelInteraction, useWheelAnimation) own their domains with clear APIs and JSDoc.
+- **useBibleWheelSettings** extracted (Point 2): all JSON + localStorage + export/import/reset now lives in one hook. `BibleWheel.tsx` is a 137-line thin orchestrator.
+- **Polish & cleanup** (Points 1+3): `HebrewCellUserData` type added + casts tightened; stale fallback defaults in settings.ts removed (now derives from DIVISIONS); barrel `index.ts` files added to hooks/, utils/, components/; remaining smells documented.
+- **Checkpoints**: Git branches + annotated tags used before/after every major phase (see `git tag --list | grep checkpoint`).
+
+The architecture is now ready for long-term extension. All changes were made via direct filesystem edits with build verification after every step.
+
 Good luck — and may the curves be ever in your favor.

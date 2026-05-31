@@ -1,6 +1,6 @@
 import { useEffect, useCallback } from 'react';
 import * as THREE from 'three';
-import type { BibleWheelConfig } from '../bible-wheel.types';
+import type { BibleWheelConfig, WedgeUserData } from '../bible-wheel.types';
 import type { useDivisionTransition } from './useDivisionTransition';
 
 interface UseWheelAnimationParams {
@@ -81,7 +81,7 @@ export function useWheelAnimation(params: UseWheelAnimationParams) {
         mat.transparent = true;
         mesh.visible = wedgesVisible;
 
-        const data = mesh.userData as any;
+        const data = mesh.userData as WedgeUserData | undefined;
 
         if (data?.originalPosition) {
           mesh.position.copy(data.originalPosition as THREE.Vector3);

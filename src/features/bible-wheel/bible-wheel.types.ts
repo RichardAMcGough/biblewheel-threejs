@@ -14,7 +14,7 @@ export interface BibleWheelBook {
  * Used by raycasting (hover/click) so we can identify which book was interacted with
  * and move its labels in lockstep when the wedge lifts on hover.
  */
-export interface WedgeUserData {
+export interface WedgeUserData extends LabelledMeshUserData {
   book: BibleWheelBook;
   spoke: number;
   cycle: number;
@@ -31,7 +31,7 @@ export interface WedgeUserData {
  * Used by spoke-hover interaction so the cell + its two labels (glyph + name)
  * can be depressed together, while lifting the three corresponding book wedges.
  */
-export interface HebrewCellUserData {
+export interface HebrewCellUserData extends LabelledMeshUserData {
   spoke: number;
   type?: 'hebrewCell';
   /** Troika Text labels riding on the cell (glyph + romanized name). */
@@ -40,6 +40,24 @@ export interface HebrewCellUserData {
   labelRestZ: number[];
   /** Resting Z for the cell itself (used for relative lift math). */
   cellRestZ?: number;
+}
+
+/**
+ * Minimal shared shape for any mesh that carries Troika labels which must lift/sink together on hover.
+ * Used by book wedges, Hebrew cells, and Canon division blocks.
+ * This lets the hover logic and label attachment code be consistent without `as any`.
+ */
+export interface LabelledMeshUserData {
+  labels?: TroikaText[];
+  labelRestZ?: number[];
+}
+
+/**
+ * UserData shape for the large Canon / Division block meshes.
+ * Currently only carries labels for hover lifting in Division mode.
+ */
+export interface DivisionBlockUserData extends LabelledMeshUserData {
+  // No extra fields needed today; the base is sufficient
 }
 
 /**

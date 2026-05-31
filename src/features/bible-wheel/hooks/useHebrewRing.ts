@@ -1,7 +1,8 @@
 import { useRef, useCallback } from 'react';
 import * as THREE from 'three';
 import { Text as TroikaText } from 'troika-three-text';
-import type { BibleWheelConfig, HebrewCellUserData } from '../bible-wheel.types';
+import type { BibleWheelConfig, HebrewCellUserData, WedgeUserData } from '../bible-wheel.types';
+import { configureTroikaLabelOverlay } from '../utils/createCurvedText';
 import { createHebrewCells } from '../utils/hebrewRing';
 
 /**
@@ -75,15 +76,7 @@ export function useHebrewRing(options: UseHebrewRingOptions): HebrewRingApi {
         const labelRests: number[] = data?.labelRestZ ?? [2.95, 2.95];
         prevPair.forEach((label, i) => {
           label.position.z = (labelRests[i] ?? 2.95) + delta;
-          label.renderOrder = 50;
-          if (label.material) {
-            const m = label.material as any;
-            m.transparent = true;
-            m.opacity = 1;
-            m.depthTest = false;
-            m.depthWrite = false;
-            m.needsUpdate = true;
-          }
+          configureTroikaLabelOverlay(label, 50);
         });
       }
 
@@ -95,7 +88,7 @@ export function useHebrewRing(options: UseHebrewRingOptions): HebrewRingApi {
         const mat = wedge.material as any;
         if (mat) mat.emissiveIntensity = 0.04;
 
-        const wData = wedge.userData as any;
+        const wData = wedge.userData as WedgeUserData | undefined;
         if (wData?.labels && wData.labelRestZ) {
           wData.labels.forEach((l: any, i: number) => {
             l.position.z = (wData.labelRestZ[i] ?? 0) + rest;
@@ -124,15 +117,7 @@ export function useHebrewRing(options: UseHebrewRingOptions): HebrewRingApi {
       const labelRests: number[] = data?.labelRestZ ?? [2.95, 2.95];
       pair.forEach((label, i) => {
         label.position.z = (labelRests[i] ?? 2.95) + delta;
-        label.renderOrder = 50;
-        if (label.material) {
-          const m = label.material as any;
-          m.transparent = true;
-          m.opacity = 1;
-          m.depthTest = false;
-          m.depthWrite = false;
-          m.needsUpdate = true;
-        }
+        configureTroikaLabelOverlay(label, 50);
       });
     }
 
@@ -145,7 +130,7 @@ export function useHebrewRing(options: UseHebrewRingOptions): HebrewRingApi {
       const mat = wedge.material as any;
       if (mat) mat.emissiveIntensity = 0.55;
 
-      const wData = wedge.userData as any;
+      const wData = wedge.userData as WedgeUserData | undefined;
       if (wData?.labels && wData.labelRestZ) {
         wData.labels.forEach((l: any, i: number) => {
           l.position.z = (wData.labelRestZ[i] ?? 0) + rest + liftAmount;

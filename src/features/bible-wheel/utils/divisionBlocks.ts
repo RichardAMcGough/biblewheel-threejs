@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import type { BibleWheelConfig, DivisionKey } from '../bible-wheel.types';
+import type { BibleWheelConfig, DivisionKey, DivisionBlockUserData } from '../bible-wheel.types';
 import {
   wedgeTheta,
   cycleRadii,
@@ -73,6 +73,8 @@ export function createDivisionBlockMeshes(
     const blockMesh = new THREE.Mesh(geo, mat);
     blockMesh.visible = false;
     blockMesh.renderOrder = 10;
+    // Seed typed userData so label attachment (in divisionLabels) and hover lift never need `as any`
+    blockMesh.userData = { labels: [], labelRestZ: [] } as DivisionBlockUserData;
     group.add(blockMesh);
     divisionBlockMeshesRef.current.push(blockMesh);
 

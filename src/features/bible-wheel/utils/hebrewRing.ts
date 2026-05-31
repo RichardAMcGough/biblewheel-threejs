@@ -7,6 +7,7 @@ import {
   makeWedgeShape,
 } from './wheelGeometry';
 import { HEBREW_LETTERS } from '../bible-wheel.types';
+import { configureTroikaLabelOverlay } from './createCurvedText';
 
 /**
  * Creates the 22 beveled Hebrew letter cells + their Troika labels.
@@ -132,15 +133,7 @@ export function createHebrewCells(
 
     // Make Hebrew labels always render on top of nearby gold ring geometry
     [glyph, nameLabel].forEach((label) => {
-      label.renderOrder = 50;
-      if (label.material) {
-        const m = label.material as any;
-        m.transparent = true;
-        m.opacity = 1;
-        m.depthTest = false;
-        m.depthWrite = false;
-        m.needsUpdate = true;
-      }
+      configureTroikaLabelOverlay(label, 50);
     });
 
     labelPairs.current[i] = [glyph, nameLabel];

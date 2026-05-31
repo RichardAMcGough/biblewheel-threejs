@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { Text as TroikaText } from 'troika-three-text';
-import type { BibleWheelConfig, DivisionLabelStyles, DivisionKey } from '../bible-wheel.types';
+import type { BibleWheelConfig, DivisionLabelStyles, DivisionKey, DivisionBlockUserData } from '../bible-wheel.types';
 import {
   wedgeTheta,
   cycleRadii,
@@ -60,7 +60,7 @@ export function createDivisionLabels(
     const blockMidAngle = (thetaStart + endAngle) / 2 + effectiveOffset;
 
     const displayInfo = divisionDisplay[division.key];
-    const displayText = displayInfo?.canonLabel || (division as any).canonLabel || displayInfo?.label || division.label;
+    const displayText = displayInfo?.canonLabel || (division as any).canonLabel || displayInfo?.label || division.label; // canonLabel lives on runtime Division from JSON merge
     const textLines: string[] = Array.isArray(displayText) ? displayText : [displayText];
     const charMeshes: TroikaText[] = [];
 
@@ -191,10 +191,11 @@ export function createDivisionLabels(
       const divIndex = DIVISIONS.findIndex(d => d.key === division.key);
       const targetBlock = divisionBlockMeshesRef.current[divIndex];
       if (targetBlock) {
-        (targetBlock as any).userData = {
+        const data: DivisionBlockUserData = {
           labels: charMeshes,
           labelRestZ: charMeshes.map((l: any) => l.position.z),
         };
+        targetBlock.userData = data;
       }
     }
   }
