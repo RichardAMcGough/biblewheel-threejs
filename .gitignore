@@ -29,3 +29,11 @@ yarn-error.log*
 # Misc
 *.log
 *.tsbuildinfo
+
+# Vite
+.vite/
+vite.config.*.timestamp-*
+
+# Temporary files
+tmp/
+temp/
