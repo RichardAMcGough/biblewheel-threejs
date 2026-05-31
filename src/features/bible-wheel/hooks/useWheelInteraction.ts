@@ -1,7 +1,6 @@
 import { useRef, useMemo, useEffect, useCallback } from 'react';
 import * as THREE from 'three';
-import type { BibleWheelConfig } from '../bible-wheel.types';
-import type { WedgeUserData } from '../bible-wheel.types';
+import type { BibleWheelConfig, HebrewCellUserData, WedgeUserData } from '../bible-wheel.types';
 import type { useHebrewRing } from './useHebrewRing';
 import type { useDivisionTransition } from './useDivisionTransition';
 
@@ -109,7 +108,8 @@ export function useWheelInteraction(params: UseWheelInteractionParams) {
         for (let i = 0; i < hebrewRing.hebrewCellMeshesRef.current.length; i++) {
           const cell = hebrewRing.hebrewCellMeshesRef.current[i];
           if (cell === hit) {
-            hitSpoke = (cell.userData as any)?.spoke ?? (i + 1);
+            const data = cell.userData as HebrewCellUserData | undefined;
+            hitSpoke = data?.spoke ?? (i + 1);
             break;
           }
         }

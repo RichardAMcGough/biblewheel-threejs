@@ -27,6 +27,22 @@ export interface WedgeUserData {
 }
 
 /**
+ * Data attached to each beveled Hebrew alphabet cell mesh.
+ * Used by spoke-hover interaction so the cell + its two labels (glyph + name)
+ * can be depressed together, while lifting the three corresponding book wedges.
+ */
+export interface HebrewCellUserData {
+  spoke: number;
+  type?: 'hebrewCell';
+  /** Troika Text labels riding on the cell (glyph + romanized name). */
+  labels: TroikaText[];
+  /** Resting Z for the labels (relative to cell). */
+  labelRestZ: number[];
+  /** Resting Z for the cell itself (used for relative lift math). */
+  cellRestZ?: number;
+}
+
+/**
  * Configuration for the Bible Wheel geometry and animation.
  * All major radii and heights are exposed so the visualization
  * can be tuned or driven from outside.

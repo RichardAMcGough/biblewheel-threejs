@@ -23,6 +23,7 @@ import { useWheelAnimation } from './hooks/useWheelAnimation';
 import type {
   BibleWheelConfig,
   WedgeUserData,
+  HebrewCellUserData,
   DivisionKey,
   BibleWheelBook,
 } from './bible-wheel.types';
@@ -475,7 +476,7 @@ export function BibleWheelScene(props: BibleWheelSceneProps) {
 
     hebrewRing.hebrewLabelPairsRef.current.forEach((pair, idx) => {
       const cell = hebrewRing.hebrewCellMeshesRef.current[idx];
-      const data = cell?.userData as any;
+      const data = cell?.userData as HebrewCellUserData | undefined;
       const cellRest = data?.cellRestZ ?? 2.1;
       const delta = (cell?.position.z ?? 2.1) - cellRest;
       const labelRests: number[] = data?.labelRestZ ?? [2.95, 2.95];

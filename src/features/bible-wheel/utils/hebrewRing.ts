@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { Text as TroikaText } from 'troika-three-text';
-import type { BibleWheelConfig } from '../bible-wheel.types';
+import type { BibleWheelConfig, HebrewCellUserData } from '../bible-wheel.types';
 import {
   spokeCenterAngle,
   wedgeTheta,
@@ -152,6 +152,6 @@ export function createHebrewCells(
       labels: [glyph, nameLabel],
       labelRestZ: [labelZ, labelZ],
       cellRestZ: 2.1,
-    };
+    } as HebrewCellUserData;
   }
 }

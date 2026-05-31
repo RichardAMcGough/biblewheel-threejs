@@ -1,7 +1,7 @@
 import { useRef, useCallback } from 'react';
 import * as THREE from 'three';
 import { Text as TroikaText } from 'troika-three-text';
-import type { BibleWheelConfig } from '../bible-wheel.types';
+import type { BibleWheelConfig, HebrewCellUserData } from '../bible-wheel.types';
 import { createHebrewCells } from '../utils/hebrewRing';
 
 /**
@@ -69,7 +69,7 @@ export function useHebrewRing(options: UseHebrewRingOptions): HebrewRingApi {
       const prevPair = hebrewLabelPairsRef.current[prevSpoke - 1];
       const prevCellForLabels = hebrewCellMeshesRef.current[prevSpoke - 1];
       if (prevPair && prevCellForLabels) {
-        const data = prevCellForLabels.userData as any;
+        const data = prevCellForLabels.userData as HebrewCellUserData | undefined;
         const cellRest = data?.cellRestZ ?? 2.1;
         const delta = prevCellForLabels.position.z - cellRest;
         const labelRests: number[] = data?.labelRestZ ?? [2.95, 2.95];
@@ -118,7 +118,7 @@ export function useHebrewRing(options: UseHebrewRingOptions): HebrewRingApi {
     const pair = hebrewLabelPairsRef.current[spoke - 1];
     const cellForLabels = hebrewCellMeshesRef.current[spoke - 1];
     if (pair && cellForLabels) {
-      const data = cellForLabels.userData as any;
+      const data = cellForLabels.userData as HebrewCellUserData | undefined;
       const cellRest = data?.cellRestZ ?? 2.1;
       const delta = cellForLabels.position.z - cellRest;
       const labelRests: number[] = data?.labelRestZ ?? [2.95, 2.95];

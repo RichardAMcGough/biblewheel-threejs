@@ -4,7 +4,7 @@ import { Text as TroikaText } from 'troika-three-text';
 import type { BibleWheelConfig, DivisionLabelStyles, DivisionKey } from '../bible-wheel.types';
 import { createDivisionBlockMeshes as createDivisionBlockMeshesImpl } from '../utils/divisionBlocks';
 import { createDivisionLabels as createDivisionLabelsImpl } from '../utils/divisionLabels';
-// Creation logic temporarily lives in main file during Step 2 restoration
+// Pure creation logic lives in utils/ (no scene coupling)
 
 /**
  * useDivisionTransition
@@ -59,7 +59,6 @@ export function useDivisionTransition(options: UseDivisionTransitionOptions): Di
   const transitionProgressRef = useRef(0);
   const prevDivisionModeRef = useRef(divisionMode);
 
-  // Placeholder implementations — real logic will be moved in follow-up edits
   const createDivisionBlockMeshes = useCallback((group: THREE.Group) => {
     createDivisionBlockMeshesImpl(
       group,
