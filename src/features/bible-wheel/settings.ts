@@ -1,4 +1,5 @@
 import type { DivisionKey, DivisionLabelStyles } from './bible-wheel.types';
+import { DIVISIONS } from './bible-wheel.types';
 
 /**
  * Full runtime settings loaded from bible-wheel-settings.json.
@@ -54,27 +55,23 @@ export async function loadBibleWheelSettings(): Promise<BibleWheelSettings> {
     cachedSettings = settings;
     return settings;
   } catch (err) {
-    console.warn('[BibleWheel] Could not load bible-wheel-settings.json. Using built-in defaults.', err);
+    console.warn('[BibleWheel] Could not load bible-wheel-settings.json. Falling back to DIVISIONS colors only (styles may be incomplete).', err);
 
-    // Minimal fallback defaults (should rarely be hit)
+    // Fallback derives colors strictly from the authoritative DIVISIONS definition.
+    // Styles are intentionally minimal so the app remains usable; the JSON file is the design source of truth.
     const fallback: BibleWheelSettings = {
-      divisionColors: {
-        torah: '#6307ed',
-        otHistory: '#6e1111',
-        wisdom: '#6307ed',
-        majorProphets: '#9467fe',
-        minorProphets: '#b95f80',
-        gospels: '#9467fe',
-        epistles: '#458df2',
-      },
+      divisionColors: Object.fromEntries(
+        DIVISIONS.map(d => [d.key, d.defaultHex])
+      ) as Record<DivisionKey, string>,
       divisionLabelStyles: {
-        torah:         { fontSize: 1.75, letterSpacing: 0.107, font: 'inter', centerOffset: -0.52 },
-        otHistory:     { fontSize: 2.20, letterSpacing: 0.107, font: 'inter', centerOffset:  0.143 },
-        wisdom:        { fontSize: 1.75, letterSpacing: 0.107, font: 'inter', centerOffset: -0.52 },
-        majorProphets: { fontSize: 2.20, letterSpacing: 0.107, font: 'inter', centerOffset:  0.143 },
-        minorProphets: { fontSize: 2.20, letterSpacing: 0.107, font: 'inter', centerOffset:  0.143 },
-        gospels:       { fontSize: 2.20, letterSpacing: 0.107, font: 'inter', centerOffset:  0.143 },
-        epistles:      { fontSize: 2.20, letterSpacing: 0.107, font: 'inter', centerOffset:  0.143 },
+        // Safe minimal styles (the real tuned values + per-division centerOffsets live in the JSON)
+        torah:         { fontSize: 2.0, letterSpacing: 0.12, font: 'english', centerOffset: 0 },
+        otHistory:     { fontSize: 2.2, letterSpacing: 0.12, font: 'english', centerOffset: 0 },
+        wisdom:        { fontSize: 2.0, letterSpacing: 0.12, font: 'english', centerOffset: 0 },
+        majorProphets: { fontSize: 2.2, letterSpacing: 0.12, font: 'english', centerOffset: 0 },
+        minorProphets: { fontSize: 2.2, letterSpacing: 0.12, font: 'english', centerOffset: 0 },
+        gospels:       { fontSize: 2.2, letterSpacing: 0.12, font: 'english', centerOffset: 0 },
+        epistles:      { fontSize: 2.2, letterSpacing: 0.12, font: 'english', centerOffset: 0 },
       },
     };
 

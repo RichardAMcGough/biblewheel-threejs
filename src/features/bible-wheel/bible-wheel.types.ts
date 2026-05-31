@@ -151,7 +151,9 @@ export const HEADING_FONT_OPTIONS = [
   { value: 'impact',     label: 'Impact' },
 ] as const;
 
-// Use the tuned values from bible-wheel-settings.json as the true defaults
+// Use the tuned values from bible-wheel-settings.json as the true defaults.
+// NOTE: This is a build-time import (for any legacy static consumers). Runtime loading + localStorage
+// overrides are handled exclusively by useBibleWheelSettings / loadBibleWheelSettings.
 import settings from '../../../bible-wheel-settings.json';
 
 export const DEFAULT_DIVISION_LABEL_STYLES: DivisionLabelStyles = (settings as any).divisionLabelStyles;

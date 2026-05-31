@@ -83,7 +83,7 @@ export function useWheelInteraction(params: UseWheelInteractionParams) {
       }
 
       // Lift any attached labels (works for both wedges and division blocks)
-      const data = mesh.userData as any;
+      const data = mesh.userData as WedgeUserData | any; // any fallback for Division blocks (different shape)
       if (data?.labels && data?.labelRestZ) {
         for (let i = 0; i < data.labels.length; i++) {
           data.labels[i].position.z = data.labelRestZ[i] + lift;
