@@ -1,4 +1,4 @@
-import { useRef, useEffect, useMemo } from 'react';
+import { useRef, useEffect } from 'react';
 import { useThree } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
@@ -18,6 +18,7 @@ import {
 } from './utils/wheelGeometry';
 import { useHebrewRing } from './hooks/useHebrewRing';
 import { useDivisionTransition } from './hooks/useDivisionTransition';
+import { useWheelInteraction } from './hooks/useWheelInteraction';
 import type {
   BibleWheelConfig,
   WedgeUserData,
@@ -81,9 +82,8 @@ export function BibleWheelScene(props: BibleWheelSceneProps) {
   // transitionProgressRef moved into useDivisionTransition hook (Step 2)
   const prevDivisionModeRef = useRef(divisionMode);
 
-  const hoveredRef = useRef<THREE.Mesh | null>(null);
-  const raycaster = useMemo(() => new THREE.Raycaster(), []);
-  const pointer = useMemo(() => new THREE.Vector2(), []);
+  // Interaction logic is now fully encapsulated in useWheelInteraction hook
+
 
   // Hebrew ring system (encapsulated - Step 1)
   const hebrewRing = useHebrewRing({
@@ -639,154 +639,19 @@ export function BibleWheelScene(props: BibleWheelSceneProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [divisionLabelStyles]);
 
-  // ==================== Custom Raycast / Hover ====================
+  // ==================== Interaction (encapsulated - Step 3) ====================
 
-  const getCurrentTargets = (): THREE.Object3D[] => {
-    if (divisionMode) {
-      return divisionTransition.divisionBlockMeshesRef.current;
-    }
-
-    // In normal mode, include book wedges and the Hebrew cell meshes (not the raw text)
-    const targets: THREE.Object3D[] = [...wedgeMeshesRef.current];
-    hebrewRing.hebrewCellMeshesRef.current.forEach(cell => targets.push(cell));
-    return targets;
-  };
-
-  const updatePointer = (event: MouseEvent) => {
-    const rect = gl.domElement.getBoundingClientRect();
-    pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-    pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-  };
-
-  const pickObject = (): THREE.Object3D | null => {
-    raycaster.setFromCamera(pointer, camera);
-    const targets = getCurrentTargets();
-    if (targets.length === 0) return null;
-    const hits = raycaster.intersectObjects(targets, false);
-    return hits.length > 0 ? hits[0].object : null;
-  };
-
-  const setMeshHover = (mesh: THREE.Mesh | null, hovered: boolean) => {
-    const liftAmount = config.hoverLiftZ ?? 1.2;
-    const lift = hovered ? liftAmount : 0;
-
-    if (!mesh) return;
-
-    const rest = wedgeRestZRef.current.get(mesh) ?? 0;
-    mesh.position.z = rest + lift;
-
-    const mat = mesh.material as THREE.MeshStandardMaterial;
-    if (mat) {
-      (mat as any).emissiveIntensity = hovered ? 0.55 : 0.04;
-    }
-
-    // Lift any labels attached to this mesh (works for both book wedges and division blocks)
-    const data = mesh.userData as any;
-    if (data?.labels && data?.labelRestZ) {
-      for (let i = 0; i < data.labels.length; i++) {
-        data.labels[i].position.z = data.labelRestZ[i] + lift;
-      }
-    }
-  };
-
-  // setSpokeHover is now provided by useHebrewRing hook (Step 1)
-
-  useEffect(() => {
-    const dom = gl.domElement;
-    if (!dom) return;
-
-    const onPointerMove = (e: MouseEvent) => {
-      updatePointer(e);
-      const hit = pickObject();
-
-      // Check if we hit a Hebrew cell on the outer ring (preferred over raw text)
-      let hitSpoke: number | null = null;
-      if (hit && !divisionMode) {
-        for (let i = 0; i < hebrewRing.hebrewCellMeshesRef.current.length; i++) {
-          const cell = hebrewRing.hebrewCellMeshesRef.current[i];
-          if (cell === hit) {
-            hitSpoke = (cell.userData as any)?.spoke ?? (i + 1);
-            break;
-          }
-        }
-      }
-
-      // If hovering a Hebrew letter → do spoke highlighting instead of normal wedge hover
-      if (hitSpoke !== null) {
-        if (hebrewRing.currentHebrewSpokeRef.current === hitSpoke) return;
-
-        // Clear any previous normal wedge hover
-        if (hoveredRef.current) {
-          setMeshHover(hoveredRef.current, false);
-          hoveredRef.current = null;
-        }
-
-        hebrewRing.setSpokeHover(hitSpoke);
-        dom.style.cursor = 'pointer';
-        return;
-      }
-
-      // Normal wedge / block hover
-      if (hitSpoke === null && hebrewRing.currentHebrewSpokeRef.current !== null) {
-        hebrewRing.setSpokeHover(null); // clear previous spoke hover
-      }
-
-      const mesh = (hit && 'isMesh' in hit) ? (hit as THREE.Mesh) : null;
-
-      if (mesh === hoveredRef.current) return;
-
-      if (hoveredRef.current) {
-        setMeshHover(hoveredRef.current, false);
-      }
-
-      hoveredRef.current = mesh;
-
-      if (mesh) {
-        setMeshHover(mesh, true);
-        dom.style.cursor = 'pointer';
-      } else {
-        dom.style.cursor = 'default';
-      }
-    };
-
-    const onClick = (e: MouseEvent) => {
-      updatePointer(e);
-      const hit = pickObject();
-      // For now, only normal wedge clicks are supported
-      if (hit && 'isMesh' in hit) {
-        const data = (hit as any).userData as WedgeUserData;
-        if (data?.book) {
-          onWedgeClick(data);
-        }
-      }
-    };
-
-    const onPointerLeave = () => {
-      if (hoveredRef.current) {
-        setMeshHover(hoveredRef.current, false);
-        hoveredRef.current = null;
-      }
-      if (hebrewRing.currentHebrewSpokeRef.current !== null) {
-        hebrewRing.setSpokeHover(null);
-      }
-      dom.style.cursor = 'default';
-    };
-
-    dom.addEventListener('mousemove', onPointerMove);
-    dom.addEventListener('click', onClick);
-    dom.addEventListener('mouseleave', onPointerLeave);
-
-    return () => {
-      dom.removeEventListener('mousemove', onPointerMove);
-      dom.removeEventListener('click', onClick);
-      dom.removeEventListener('mouseleave', onPointerLeave);
-      if (hoveredRef.current) {
-        setMeshHover(hoveredRef.current, false);
-        hoveredRef.current = null;
-      }
-      dom.style.cursor = 'default';
-    };
-  }, [gl, camera, divisionMode, config.hoverLiftZ, onWedgeClick]);
+  useWheelInteraction({
+    gl,
+    camera,
+    divisionMode,
+    config,
+    onWedgeClick,
+    wedgeMeshesRef,
+    wedgeRestZRef,
+    hebrewRing,
+    divisionTransition,
+  });
 
   // ==================== Animation Loop ====================
 
