@@ -23,6 +23,8 @@ The Bible Wheel displays the 66 books of the Bible as three concentric cycles ar
 - **CYLCE 3** — Romans to Revelation
   - **NT Epistles (22)** 
 
+![Bible Wheel](./assets/images/biblewheel-screenshot-2026-05-31.png)
+
 Explore the original vision: [biblewheel.com/original](https://biblewheel.com/original)
 
 
