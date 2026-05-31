@@ -4,6 +4,7 @@ import { Text as TroikaText } from 'troika-three-text';
 import type { BibleWheelConfig, DivisionLabelStyles, DivisionKey } from '../bible-wheel.types';
 import { createDivisionBlockMeshes as createDivisionBlockMeshesImpl } from '../utils/divisionBlocks';
 import { createDivisionLabels as createDivisionLabelsImpl } from '../utils/divisionLabels';
+import { configureTroikaLabelOverlay } from '../utils/createCurvedText';
 // Pure creation logic lives in utils/ (no scene coupling)
 
 /**
@@ -89,15 +90,7 @@ export function useDivisionTransition(options: UseDivisionTransitionOptions): Di
     divisionLabelGroupsRef.current.forEach(group => {
       group.forEach(charLabel => {
         charLabel.visible = true;
-        charLabel.renderOrder = 100;
-        if (charLabel.material) {
-          const m = charLabel.material as any;
-          m.transparent = true;
-          m.opacity = 1;
-          m.depthTest = false;
-          m.depthWrite = false;
-          m.needsUpdate = true;
-        }
+        configureTroikaLabelOverlay(charLabel, 100);
         charLabel.sync();
         requestAnimationFrame(() => charLabel.sync());
         setTimeout(() => charLabel.sync(), 50);

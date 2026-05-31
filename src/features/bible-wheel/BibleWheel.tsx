@@ -7,6 +7,7 @@ import { ColorPickerPanel } from './components/ColorPickerPanel';
 import { InfoPanel } from './components/InfoPanel';
 import { ControlButtons } from './components/ControlButtons';
 import { useBibleWheelSettings } from './hooks';
+import { DebugLightingProvider } from './hooks/useDebugLighting';
 import type {
   BibleWheelBook,
   BibleWheelConfig,
@@ -41,6 +42,9 @@ export function BibleWheel({ config: userConfig, initialBookPosition, onBookSele
   const [divisionMode, setDivisionMode] = useState(false);
   const [selectedBook, setSelectedBook] = useState<BibleWheelBook | null>(null);
   const [selectedMeta, setSelectedMeta] = useState<{ spoke: number; cycle: number; hebrew: string } | null>(null);
+
+  // Debug lighting state is now provided via context
+
 
   // These dummy setters are kept only for Scene prop compatibility (scene owns real refs internally).
   const [, setWedgeMeshes] = useState<THREE.Mesh[]>([]);
@@ -85,9 +89,10 @@ export function BibleWheel({ config: userConfig, initialBookPosition, onBookSele
   };
 
   return (
-    <div className="bible-wheel">
-      <div className="renderer-container">
-        <Canvas
+    <DebugLightingProvider>
+      <div className="bible-wheel">
+        <div className="renderer-container">
+          <Canvas
           camera={{ fov: 40, near: 0.5, far: 500, position: [0, -22, 90] }}
           style={{ background: 'transparent' }}
           gl={{
@@ -149,5 +154,6 @@ export function BibleWheel({ config: userConfig, initialBookPosition, onBookSele
         }}
       />
     </div>
+    </DebugLightingProvider>
   );
 }

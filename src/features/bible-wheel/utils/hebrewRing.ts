@@ -107,13 +107,20 @@ export function createHebrewCells(
     const labelZ = cell.position.z + 0.85;
     const bandMid = (cellInner + cellOuter) / 2;
 
+    // Name position is intentionally kept closer to the inner edge of the band.
+    const nameRadius = bandMid - 1.0;
+
+    // Glyphs are placed midway between the name and the outer gold ring
+    // so they no longer overlap the names.
+    const glyphRadius = (nameRadius + cellOuter) / 2;
+
     const glyph = makeText({
       text: letter.glyph,
       font: 'hebrew',
       fontSize: 2.9,
       color: 0xf5e9b0,
-      x: bandMid * Math.cos(angle),
-      y: bandMid * Math.sin(angle),
+      x: glyphRadius * Math.cos(angle),
+      y: glyphRadius * Math.sin(angle),
       z: labelZ,
       rotation,
     });
@@ -124,8 +131,8 @@ export function createHebrewCells(
       font: 'english',
       fontSize: 1.2,
       color: 0xd4b85a,
-      x: (bandMid - 1.0) * Math.cos(angle),
-      y: (bandMid - 1.0) * Math.sin(angle),
+      x: nameRadius * Math.cos(angle),
+      y: nameRadius * Math.sin(angle),
       z: labelZ,
       rotation,
     });

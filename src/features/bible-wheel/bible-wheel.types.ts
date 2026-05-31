@@ -152,21 +152,24 @@ export const DIVISION_DISPLAY_STORAGE_KEY = 'biblewheel:divisionDisplay';
 export interface DivisionLabelStyle {
   fontSize: number;
   letterSpacing: number;     // angular step between characters (radians)
-  font: string;              // heading font key (e.g. 'inter', 'bebas', 'oswald'...)
+  font: string;              // heading font key from HEADING_FONT_OPTIONS (e.g. 'inter', 'bebas', 'anton', 'archivo'...)
   centerOffset?: number;     // per-division visual centering correction (radians)
 }
 
 export type DivisionLabelStyles = Record<DivisionKey, DivisionLabelStyle>;
 
-// Popular clear "Heading" fonts for block labels (best legibility when curved)
+// Popular clear "Heading" fonts for block labels (best legibility when curved).
+// Only options with actual .ttf files present in public/assets/fonts/ are included.
+// Hebrew is intentionally excluded (it is only used for the outer ring).
 export const HEADING_FONT_OPTIONS = [
-  { value: 'inter',      label: 'Inter Black' },
-  { value: 'bebas',      label: 'Bebas Neue' },
-  { value: 'oswald',     label: 'Oswald Bold' },
-  { value: 'montserrat', label: 'Montserrat Black' },
-  { value: 'anton',      label: 'Anton' },
-  { value: 'roboto',     label: 'Roboto Black' },
-  { value: 'impact',     label: 'Impact' },
+  { value: 'anton',       label: 'Anton' },
+  { value: 'archivo',     label: 'Archivo Black' },
+  { value: 'arimo',       label: 'Arimo' },
+  { value: 'bebas',       label: 'Bebas Neue' },
+  { value: 'inter',       label: 'Inter Bold' },
+  { value: 'merriweather',label: 'Merriweather' },
+  { value: 'montserrat',  label: 'Montserrat' },
+  { value: 'roboto',      label: 'Roboto' },
 ] as const;
 
 // Use the tuned values from bible-wheel-settings.json as the true defaults.
@@ -215,10 +218,39 @@ export const HEBREW_LETTERS: { name: string; glyph: string }[] = [
   { name: 'Tav',    glyph: 'ת' },
 ];
 
-// Font paths (relative to public)
+// Font paths (relative to public) — used for the small book name/number labels
 export const FONTS = {
   hebrew: '/assets/fonts/sbl_hebrew.ttf',
   english: '/assets/fonts/Inter-Bold.ttf',
 } as const;
 
 export type FontKey = keyof typeof FONTS;
+
+/**
+ * Complete font URL map used by Troika-three-text for both small book labels
+ * and the large curved Canon/Division block labels.
+ *
+ * We only use same-origin local .ttf files (remote fonts have repeatedly caused
+ * "Failure loading font" errors with Troika's XHR loader).
+ *
+ * Files currently present in public/assets/fonts/ and mapped below:
+ *   Inter-Bold.ttf, BebasNeue-Regular.ttf, Anton-Regular.ttf,
+ *   Montserrat-VariableFont_wght.ttf, Roboto-VariableFont_wdth,wght.ttf,
+ *   ArchivoBlack-Regular.ttf, Arimo-VariableFont_wght.ttf,
+ *   Merriweather-VariableFont_opsz,wdth,wght.ttf, sbl_hebrew.ttf
+ */
+export const FONT_URLS: Record<string, string> = {
+  // Core fonts (always available)
+  hebrew:      '/assets/fonts/sbl_hebrew.ttf',
+  english:     '/assets/fonts/Inter-Bold.ttf',
+  inter:       '/assets/fonts/Inter-Bold.ttf',
+
+  // Canon heading fonts – mapped to the actual files present in the folder
+  bebas:       '/assets/fonts/BebasNeue-Regular.ttf',
+  montserrat:  '/assets/fonts/Montserrat-VariableFont_wght.ttf',
+  anton:       '/assets/fonts/Anton-Regular.ttf',
+  roboto:      '/assets/fonts/Roboto-VariableFont_wdth,wght.ttf',
+  archivo:     '/assets/fonts/ArchivoBlack-Regular.ttf',
+  arimo:       '/assets/fonts/Arimo-VariableFont_wght.ttf',
+  merriweather:'/assets/fonts/Merriweather-VariableFont_opsz,wdth,wght.ttf',
+};

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { Text as TroikaText } from 'troika-three-text';
-import { FONTS } from '../bible-wheel.types';
+import { FONT_URLS } from '../bible-wheel.types';
 
 export interface CurvedLabelParams {
   text: string | string[];
@@ -63,8 +63,13 @@ export function createCurvedText(
 
       const charLabel = new TroikaText();
       charLabel.text = char;
-      // For now all heading fonts fall back to the loaded Inter-Bold until you add more .ttf files
-      charLabel.font = FONTS.english;
+
+      // Always start with the reliable local Inter-Bold so the label is guaranteed
+      // to be visible immediately, even while remote heading fonts are loading.
+      const requestedKey = (params.font || 'english').toLowerCase();
+      const safeUrl = FONT_URLS.english;
+      charLabel.font = safeUrl;
+
       charLabel.fontSize = fontSize;
       charLabel.color = color;
       charLabel.anchorX = 'center';
@@ -84,11 +89,49 @@ export function createCurvedText(
       charLabel.visible = true;
       charLabel.renderOrder = 100;
 
-      // Sync immediately
+      // Sync immediately with safe font
       charLabel.sync();
 
       wheelGroup.add(charLabel);
       outArray.push(charLabel);
+
+      // If a truly different font URL is configured for this key (i.e. the user has
+      // added a real local .ttf and pointed FONT_URLS at it), we attempt a delayed
+      // upgrade after the label is already visible with the safe font.
+      //
+      // With the current FONT_URLS (everything aliases to local Inter-Bold), this
+      // branch is almost never taken — which is intentional. It prevents the exact
+      // "Failure loading font https://fonts.gstatic.com/..." errors you saw.
+      //
+      // See the big comment in bible-wheel.types.ts for how to enable real
+      // per-font visual differences.
+      const targetUrl = FONT_URLS[requestedKey];
+      if (targetUrl && targetUrl !== safeUrl) {
+        setTimeout(() => {
+          if (charLabel && charLabel.parent) {
+            charLabel.font = targetUrl;
+            charLabel.visible = true;
+            charLabel.sync();
+
+            // Re-apply overlay material (depthTest, etc.) — required after font change
+            configureTroikaLabelOverlay(charLabel, 100);
+            charLabel.sync();
+
+            requestAnimationFrame(() => {
+              if (charLabel.parent) {
+                configureTroikaLabelOverlay(charLabel, 100);
+                charLabel.sync();
+              }
+            });
+            setTimeout(() => {
+              if (charLabel.parent) {
+                configureTroikaLabelOverlay(charLabel, 100);
+                charLabel.sync();
+              }
+            }, 150);
+          }
+        }, 650);
+      }
     });
   });
 }

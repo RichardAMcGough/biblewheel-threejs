@@ -12,6 +12,7 @@ interface UseWheelAnimationParams {
   centerGlowRef: React.MutableRefObject<THREE.PointLight | null>;
   wedgeMeshesRef: React.MutableRefObject<THREE.Mesh[]>;
   controlsRef: React.MutableRefObject<any>;
+  camera: THREE.Camera;
 
   divisionTransition: ReturnType<typeof useDivisionTransition>;
 }
@@ -25,6 +26,7 @@ export function useWheelAnimation(params: UseWheelAnimationParams) {
     centerGlowRef,
     wedgeMeshesRef,
     controlsRef,
+    camera,
     divisionTransition,
   } = params;
 
@@ -46,13 +48,57 @@ export function useWheelAnimation(params: UseWheelAnimationParams) {
 
       const elapsed = performance.now() / 1000;
 
-      // Entrance animation (softened for immediate visibility)
-      const t = Math.min(1, elapsed / (config.entranceDuration ?? 1.4));
+      // ==================== Dramatic Entrance ====================
+      // Camera starts far away and dollies in.
+      // The wheel spins and tilts back and forth so the metallic/clearcoat surfaces
+      // catch the lights and shimmer nicely as it approaches.
+      // At the end it settles perfectly straight on (no tilt).
+      //
+      // NOTE: OrbitControls are disabled during the entrance to prevent fighting
+      // with the manual camera animation (this was causing the "shiver" on zoom).
+      const entranceDuration = config.entranceDuration ?? 3.8; // slower, more majestic
+      const t = Math.min(1, elapsed / entranceDuration);
       const ease = 1 - Math.pow(1 - t, 3);
-      group.rotation.x = (1 - ease) * -0.35;
-      group.rotation.z = (1 - ease) * -0.25;
-      const s = 0.85 + 0.15 * ease;
-      group.scale.set(s, s, s);
+
+      const controls = controlsRef.current;
+
+      if (t < 1) {
+        // Disable controls during the cinematic entrance
+        if (controls) controls.enabled = false;
+
+        // Camera dolly from far away into final position
+        const farZ = 265;
+        const finalZ = 90;
+        camera.position.z = farZ + (finalZ - farZ) * ease;
+        camera.lookAt(0, 0, 6);
+
+        // Subtle scale as it arrives
+        const s = 0.88 + 0.12 * ease;
+        group.scale.set(s, s, s);
+
+        // Spinning (settles to straight orientation)
+        const numSpins = 2.6;
+        const spinEase = 1 - Math.pow(1 - t, 2.6);
+        const spin = (1 - spinEase) * numSpins * Math.PI * 2;
+        group.rotation.z = spin;
+
+        // Tilting back and forth during approach for light shimmer
+        const tiltAmplitude = (1 - ease) * 0.32;
+        const rock = Math.sin(t * Math.PI * 2.8) * tiltAmplitude;
+        group.rotation.x = rock;
+
+      } else {
+        // Entrance finished — hand control back to OrbitControls
+        if (controls && !controls.enabled) {
+          controls.enabled = true;
+          controls.update?.();
+        }
+
+        // Lock final clean orientation (straight on, no tilt)
+        group.rotation.x = 0;
+        group.rotation.z = 0;
+        group.scale.set(1, 1, 1);
+      }
 
       // Cross pulse
       const pulse = 0.85 + 0.15 * Math.sin(elapsed * (config.pulseFrequency ?? 1.6));

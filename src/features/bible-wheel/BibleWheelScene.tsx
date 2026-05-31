@@ -21,7 +21,9 @@ import {
   useDivisionTransition,
   useWheelInteraction,
   useWheelAnimation,
+  useDebugLighting,
 } from './hooks';
+import { LightPositionHelpers } from './components/LightPositionHelpers';
 import type {
   BibleWheelConfig,
   WedgeUserData,
@@ -68,11 +70,27 @@ export function BibleWheelScene(props: BibleWheelSceneProps) {
   } = props;
 
   const { scene, camera, gl } = useThree();
+
   const controlsRef = useRef<any>(null);
   const wheelGroupRef = useRef<THREE.Group>(null!);
 
   const wedgeMeshesRef = useRef<THREE.Mesh[]>([]);
   const wedgeRestZRef = useRef<Map<THREE.Mesh, number>>(new Map());
+
+  // Debug lighting state comes from context via the hook (no prop drilling)
+  const debug = useDebugLighting();
+
+  const lights = debug.lightConfig;
+  const finalAmbientIntensity = debug.finalAmbientIntensity;
+  const finalEnvIntensity = debug.finalEnvIntensity;
+
+  // Apply dynamic environment intensity from the debug panel
+  useEffect(() => {
+    if (scene) {
+      scene.environmentIntensity = finalEnvIntensity;
+    }
+  }, [finalEnvIntensity, scene]);
+
   // Division block and label refs are now owned by the useDivisionTransition hook
   // const divisionBlockMeshesRef = useRef<THREE.Mesh[]>([]);
   // const divisionLabelGroupsRef = useRef<TroikaText[][]>([]);
@@ -544,27 +562,18 @@ export function BibleWheelScene(props: BibleWheelSceneProps) {
     const pmrem = new THREE.PMREMGenerator(gl);
     const envTex = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
     scene.environment = envTex;
+    scene.environmentIntensity = 1.0; // will be overridden by debug panel via useEffect below
     pmrem.dispose();
 
     gl.setClearColor(0x000000, 0);
     scene.fog = new THREE.Fog(0x0a0a14, 90, 220);
 
-    const ambient = new THREE.AmbientLight(0x6a6da0, 0.55);
-    scene.add(ambient);
+    // Ambient light is now also declarative below so we can control it from the debug panel
+    // The three directional lights are rendered declaratively below
+    // (controlled from the "View & Lighting" tab)
 
-    const key = new THREE.DirectionalLight(0xfff4d6, 1.15);
-    key.position.set(-30, 40, 60);
-    scene.add(key);
-
-    const fill = new THREE.DirectionalLight(0x88a8ff, 0.45);
-    fill.position.set(40, -30, 35);
-    scene.add(fill);
-
-    const rim = new THREE.DirectionalLight(0xff9080, 0.35);
-    rim.position.set(0, -50, -10);
-    scene.add(rim);
-
-    camera.position.set(0, -22, 90);
+    // Start camera far away — entrance animation will dolly it in
+    camera.position.set(0, -22, 265);
     camera.lookAt(0, 0, 6);
     camera.updateProjectionMatrix();
 
@@ -608,6 +617,8 @@ export function BibleWheelScene(props: BibleWheelSceneProps) {
     applyColorsToMeshes();
   }, [divisionColors]);
 
+  // Lighting is fully managed by the useDebugLighting hook (declarative + imperative updates inside the provider).
+
   // Live rebuild of *only* the curved labels when spacing/size/offset/font changes in the panel.
   // This is surgical — we do NOT touch the 3D block meshes or book wedges.
   useEffect(() => {
@@ -618,6 +629,7 @@ export function BibleWheelScene(props: BibleWheelSceneProps) {
     divisionTransition.divisionLabelGroupsRef.current.forEach(labelGroup => {
       labelGroup.forEach(label => {
         if (label.parent) label.parent.remove(label);
+        try { (label as any).dispose?.(); } catch {}
       });
     });
     divisionTransition.divisionLabelGroupsRef.current = [];
@@ -670,11 +682,45 @@ export function BibleWheelScene(props: BibleWheelSceneProps) {
     centerGlowRef,
     wedgeMeshesRef,
     controlsRef,
+    camera,
     divisionTransition,
   });
 
   return (
     <>
+      {/* Ambient and environment are controlled by the toggle for dramatic test */}
+      <ambientLight 
+        ref={debug.ambientLightRef}
+        color={0x6a6da0} 
+        intensity={finalAmbientIntensity} 
+      />
+
+      {/* The three directional lights are always present so their individual controls always work.
+          The toggle only affects ambient + environment for a clear on/off visual test. */}
+      <directionalLight
+        ref={debug.keyLightRef}
+        color={0xfff4d6}
+        intensity={lights.key.intensity}
+        position={[lights.key.x, lights.key.y, lights.key.z]}
+      />
+      <directionalLight
+        ref={debug.fillLightRef}
+        color={0x88a8ff}
+        intensity={lights.fill.intensity}
+        position={[lights.fill.x, lights.fill.y, lights.fill.z]}
+      />
+      <directionalLight
+        ref={debug.rimLightRef}
+        color={0xff9080}
+        intensity={lights.rim.intensity}
+        position={[lights.rim.x, lights.rim.y, lights.rim.z]}
+      />
+
+      {/* Light position helpers for debugging (dev only) */}
+      {((import.meta as any).env?.MODE !== 'production') && debug.showLightHelpers && (
+        <LightPositionHelpers lights={lights} />
+      )}
+
       <group ref={wheelGroupRef} />
       <OrbitControls
         ref={controlsRef}

@@ -1,5 +1,8 @@
+import * as React from 'react';
 import type { DivisionKey, DivisionLabelStyles } from '../bible-wheel.types';
 import { DIVISIONS, HEADING_FONT_OPTIONS } from '../bible-wheel.types';
+import { LightingDebugControls } from './LightingDebugControls';
+import { useDebugLighting } from '../hooks/useDebugLighting';
 
 interface ColorPickerPanelProps {
   show: boolean;
@@ -27,73 +30,120 @@ export function ColorPickerPanel({
 }: ColorPickerPanelProps) {
   if (!show) return null;
 
+  const [activeTab, setActiveTab] = React.useState<'styles' | 'view'>('styles');
+
+  // Ensure we are inside the DebugLightingProvider (for context consumption)
+  useDebugLighting();
+
   return (
     <div className="options-panel">
-      <h3>Canon Block Styles</h3>
+      {/* Tabs */}
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '10px', borderBottom: '1px solid #444' }}>
+        <button
+          onClick={() => setActiveTab('styles')}
+          style={{
+            background: activeTab === 'styles' ? '#2a2a44' : 'transparent',
+            color: 'white',
+            border: 'none',
+            padding: '6px 12px',
+            cursor: 'pointer',
+            borderBottom: activeTab === 'styles' ? '2px solid #d4b85a' : 'none',
+          }}
+        >
+          Styles
+        </button>
 
-      {DIVISIONS.map(d => {
-        const style = divisionLabelStyles[d.key];
-        const centerOff = style.centerOffset ?? 0;
+        {/* Only show the debug tab in development */}
+        {((import.meta as any).env?.MODE !== 'production') && (
+          <button
+            onClick={() => setActiveTab('view')}
+            style={{
+              background: activeTab === 'view' ? '#2a2a44' : 'transparent',
+              color: 'white',
+              border: 'none',
+              padding: '6px 12px',
+              cursor: 'pointer',
+              borderBottom: activeTab === 'view' ? '2px solid #d4b85a' : 'none',
+            }}
+          >
+            View &amp; Lighting
+          </button>
+        )}
+      </div>
 
-        return (
-          <div key={d.key} className="division-style-row" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', fontSize: '13px' }}>
-            <input
-              type="color"
-              value={divisionColors[d.key]}
-              onChange={(e) => onColorChange(d.key, e.target.value)}
-              style={{ width: '32px', height: '26px', padding: 0, border: '1px solid #555', borderRadius: '4px', flexShrink: 0 }}
-            />
-            <div style={{ minWidth: '96px', fontWeight: 600, fontSize: '12px', whiteSpace: 'nowrap' }}>{d.label}</div>
+      {activeTab === 'styles' && (
+        <>
+          <h3>Canon Block Styles</h3>
 
-            <select
-              value={style.font}
-              onChange={(e) => onLabelStyleChange(d.key, { font: e.target.value })}
-              style={{ fontSize: '12px', width: '108px', padding: '2px 4px' }}
-            >
-              {HEADING_FONT_OPTIONS.map(opt => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
-              ))}
-            </select>
+          {DIVISIONS.map(d => {
+            const style = divisionLabelStyles[d.key];
+            const centerOff = style.centerOffset ?? 0;
 
-            <label style={{ fontSize: '11px', marginLeft: '4px', whiteSpace: 'nowrap' }}>Size</label>
-            <input
-              type="number"
-              step="0.05"
-              value={style.fontSize}
-              onChange={(e) => onLabelStyleChange(d.key, { fontSize: parseFloat(e.target.value) || 1.5 })}
-              style={{ width: '64px', fontSize: '12px', padding: '3px 6px' }}
-            />
+            return (
+              <div key={d.key} className="division-style-row" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', fontSize: '13px' }}>
+                <input
+                  type="color"
+                  value={divisionColors[d.key]}
+                  onChange={(e) => onColorChange(d.key, e.target.value)}
+                  style={{ width: '32px', height: '26px', padding: 0, border: '1px solid #555', borderRadius: '4px', flexShrink: 0 }}
+                />
+                <div style={{ minWidth: '96px', fontWeight: 600, fontSize: '12px', whiteSpace: 'nowrap' }}>{d.label}</div>
 
-            <label style={{ fontSize: '11px', whiteSpace: 'nowrap' }}>Spacing</label>
-            <input
-              type="number"
-              step="0.003"
-              value={style.letterSpacing}
-              onChange={(e) => onLabelStyleChange(d.key, { letterSpacing: parseFloat(e.target.value) || 0.1 })}
-              style={{ width: '68px', fontSize: '12px', padding: '3px 6px' }}
-            />
+                <select
+                  value={style.font}
+                  onChange={(e) => onLabelStyleChange(d.key, { font: e.target.value })}
+                  style={{ fontSize: '12px', width: '108px', padding: '2px 4px' }}
+                >
+                  {HEADING_FONT_OPTIONS.map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
 
-            <label style={{ fontSize: '11px', whiteSpace: 'nowrap' }}>Center</label>
-            <input
-              type="number"
-              step="0.005"
-              value={centerOff}
-              onChange={(e) => onLabelStyleChange(d.key, { centerOffset: parseFloat(e.target.value) || 0 })}
-              style={{ width: '62px', fontSize: '12px', padding: '3px 6px' }}
-            />
+                <label style={{ fontSize: '11px', marginLeft: '4px', whiteSpace: 'nowrap' }}>Size</label>
+                <input
+                  type="number"
+                  step="0.05"
+                  value={style.fontSize}
+                  onChange={(e) => onLabelStyleChange(d.key, { fontSize: parseFloat(e.target.value) || 1.5 })}
+                  style={{ width: '64px', fontSize: '12px', padding: '3px 6px' }}
+                />
+
+                <label style={{ fontSize: '11px', whiteSpace: 'nowrap' }}>Spacing</label>
+                <input
+                  type="number"
+                  step="0.003"
+                  value={style.letterSpacing}
+                  onChange={(e) => onLabelStyleChange(d.key, { letterSpacing: parseFloat(e.target.value) || 0.1 })}
+                  style={{ width: '68px', fontSize: '12px', padding: '3px 6px' }}
+                />
+
+                <label style={{ fontSize: '11px', whiteSpace: 'nowrap' }}>Center</label>
+                <input
+                  type="number"
+                  step="0.005"
+                  value={centerOff}
+                  onChange={(e) => onLabelStyleChange(d.key, { centerOffset: parseFloat(e.target.value) || 0 })}
+                  style={{ width: '62px', fontSize: '12px', padding: '3px 6px' }}
+                />
+              </div>
+            );
+          })}
+
+          <div className="panel-actions" style={{ marginTop: '8px' }}>
+            <button className="reset-btn" onClick={onReset}>Reset Colors</button>
+            <button className="reset-btn" onClick={onResetLabelStyles}>Reset Label Styles</button>
           </div>
-        );
-      })}
 
-      <div className="panel-actions" style={{ marginTop: '8px' }}>
-        <button className="reset-btn" onClick={onReset}>Reset Colors</button>
-        <button className="reset-btn" onClick={onResetLabelStyles}>Reset Label Styles</button>
-      </div>
+          <div className="panel-actions">
+            <button className="export-btn" onClick={onExport}>Export Settings (JSON)</button>
+            <button className="import-btn" onClick={onImport}>Import</button>
+          </div>
+        </>
+      )}
 
-      <div className="panel-actions">
-        <button className="export-btn" onClick={onExport}>Export Settings (JSON)</button>
-        <button className="import-btn" onClick={onImport}>Import</button>
-      </div>
+      {activeTab === 'view' && ((import.meta as any).env?.MODE !== 'production') && (
+        <LightingDebugControls />
+      )}
     </div>
   );
 }

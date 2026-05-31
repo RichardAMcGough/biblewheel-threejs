@@ -11,3 +11,5 @@ export { useWheelAnimation } from './useWheelAnimation';
 
 export { useBibleWheelSettings } from './useBibleWheelSettings';
 export type { UseBibleWheelSettingsReturn } from './useBibleWheelSettings';
+
+export { useDebugLighting, DebugLightingProvider } from './useDebugLighting';

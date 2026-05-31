@@ -26,6 +26,7 @@ export function createDivisionLabels(
   divisionLabelGroupsRef.current.forEach(labelGroup => {
     labelGroup.forEach(label => {
       if (label.parent) label.parent.remove(label);
+      try { (label as any).dispose?.(); } catch {}
     });
   });
   divisionLabelGroupsRef.current = [];
@@ -47,7 +48,7 @@ export function createDivisionLabels(
     const bevel = Math.min(0.5, depth * 0.3);
 
     const style = styles[division.key] || {
-      font: 'Cinzel',
+      font: 'inter',
       fontSize: 1.8,
       letterSpacing: 0.12,
       centerOffset: 0,
@@ -66,7 +67,7 @@ export function createDivisionLabels(
 
     const charAngularStep = style.letterSpacing ?? 0.12;
     const labelFontSize = style.fontSize ?? 1.8;
-    const labelFontKey = style.font ?? 'Cinzel';
+    const labelFontKey = style.font ?? 'inter';
 
     const midRadius = (radii.inner + radii.outer) / 2;
 

@@ -1,6 +1,6 @@
 {
   "version": "1.1",
-  "exportedAt": "2026-05-31T14:15:53.373Z",
+  "exportedAt": "2026-05-31T19:20:46.839Z",
   "divisionColors": {
     "torah": "#6307ed",
     "otHistory": "#6e1111",
@@ -14,44 +14,44 @@
     "torah": {
       "fontSize": 2.85,
       "letterSpacing": 0.143,
-      "font": "english",
+      "font": "archivo",
       "centerOffset": 0.033
     },
     "otHistory": {
       "fontSize": 3.25,
       "letterSpacing": 0.098,
-      "font": "english",
+      "font": "archivo",
       "centerOffset": 0.013
     },
     "wisdom": {
       "fontSize": 2.85,
       "letterSpacing": 0.1,
-      "font": "english",
+      "font": "archivo",
       "centerOffset": 0.023
     },
     "majorProphets": {
       "fontSize": 2.2,
       "letterSpacing": 0.094,
-      "font": "english",
+      "font": "archivo",
       "centerOffset": -0.002
     },
     "minorProphets": {
       "fontSize": 2.85,
-      "letterSpacing": 0.164,
-      "font": "english",
+      "letterSpacing": 0.134,
+      "font": "archivo",
       "centerOffset": 0.024
     },
     "gospels": {
       "fontSize": 2.6,
       "letterSpacing": 0.104,
-      "font": "english",
+      "font": "archivo",
       "centerOffset": -0.002
     },
     "epistles": {
       "fontSize": 2.2,
       "letterSpacing": 0.209,
-      "font": "english",
-      "centerOffset": -0.05
+      "font": "archivo",
+      "centerOffset": -0.06
     }
   },
   "divisions": [
