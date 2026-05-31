@@ -129,10 +129,6 @@ export function useWheelAnimation(params: UseWheelAnimationParams) {
 
         const data = mesh.userData as WedgeUserData | undefined;
 
-        if (data?.originalPosition) {
-          mesh.position.copy(data.originalPosition as THREE.Vector3);
-        }
-
         const smallLabelOpacity = wedgeOpacity * smallTextMult;
 
         if (data?.labels) {
