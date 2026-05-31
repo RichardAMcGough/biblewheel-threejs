@@ -151,7 +151,7 @@ The system is deliberately designed so an artist can fine-tune everything visual
 
 ## Future Vision
 
-This component is the foundation for a larger "Biblical Worlds" experience that may eventually include:
+This component is the foundation for a larger "Biblical Worlds mindmap" experience that may eventually include:
 
 - Isaiah-Bible correlation views
 - Gematria / holograph visualizations
@@ -161,11 +161,10 @@ The clean `features/bible-wheel/` boundary makes extraction into a larger Three.
 
 ## Credits
 
-- Original concept & Angular implementation: The Bible Wheel project (biblewheel.com)
-- React port, Three.js architecture, Canon tuning system, and all recent refactoring: built iteratively with extensive visual QA
+- Original concept & implementation: The Bible Wheel project (biblewheel.com)
 
 **Port completed:** 2026  
-**Goal:** 100% visual + interactive fidelity with the final Angular reference.
+
 
 ---
 
