@@ -8,25 +8,19 @@
 
 **A pixel-perfect, interactive 3D recreation of the classic Bible Wheel (Canon Wheel) visualization.**
 
-The Bible Wheel displays the 66 books of the Bible as three concentric cycles arranged around 22 spokes that correspond to the 22 letters of the Hebrew alphabet. Each cycle represents a major section of Scripture, and the seven colored divisions in Canon mode reveal the traditional thematic groupings.
+The Bible Wheel displays the 66 books of the Bible as three concentric cycles arranged around 22 spokes that correspond to the 22 letters of the Hebrew alphabet. Each wheel is called a cycle and contains 22 books. The three cycles subdivide into seven divisions, which when colored create the Canon Wheel:
 
-- **Cycle 1** — Genesis to Song of Solomon
-- **Cycle 2** — Isaiah to Acts
-- **Cycle 3** — Romans to Revelation
-
-These three cycles subdivide into the following seven divisions:
-
-- **CYLCE 1**
+- **CYLCE 1** — Genesis to Song of Solomon
 - - **Torah (5)** 
 - - **OT History (12)** 
 - - **Wisdom (5)**  
 
-- **CYLCE 2**
+- **CYLCE 2** — Isaiah to Acts
 - - **Major Prophets (5)** 
 - - **Minor Prophets (12)**  
 - - **NT History (5)**
 
-- **CYLCE 3**
+- **CYLCE 3** — Romans to Revelation
 - **NT Epistles (22)** — 
 
 Explore the original vision: [biblewheel.com/original](https://biblewheel.com/original)
@@ -34,7 +28,7 @@ Explore the original vision: [biblewheel.com/original](https://biblewheel.com/or
 
 ## Features
 
-- **Exact visual fidelity** — 3 concentric cycles (66 books), gold rings, beveled cells, Celtic cross with emissive pulse
+- **Artistic Representation** — 3 concentric cycles (66 books), gold rings, beveled cells, Celtic cross with emissive pulse
 - **Canon / Division Block Mode** (▣ toggle) — 7 continuous colored arcs with smooth cross-fade and z-fighting mitigation
 - **High-quality curved typography** — Per-character Troika SDF text with correct orientation (`reverseFor` / `flipRotationFor` maps) for every division
 - **Rich hover interactions**
