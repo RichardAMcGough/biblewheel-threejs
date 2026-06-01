@@ -365,6 +365,7 @@ export function BibleWheelScene(props: BibleWheelSceneProps) {
     });
 
     const ring = new THREE.Mesh(geo, mat);
+    ring.renderOrder = 60;  // Higher than Hebrew labels (50) so it properly obscures the English name labels at certain angles
     group.add(ring);
   }
 
@@ -501,7 +502,9 @@ export function BibleWheelScene(props: BibleWheelSceneProps) {
     divisionTransition.createDivisionLabels(group, divisionLabelStyles, divisionDisplay, divisionTransition.divisionBlockMeshesRef);
 
     group.add(makeBand(0, config.rLetter + 1.0, config.hBack, 0x0a0a22, { metalness: 0.2, roughness: 0.85 }));
-    group.add(makeBand(config.rLetter, config.rLetter + 0.7, config.hRim, 0xd4b85a, { metalness: 0.9, roughness: 0.25 }));
+    const goldRim = makeBand(config.rLetter, config.rLetter + 0.7, config.hRim, 0xd4b85a, { metalness: 0.9, roughness: 0.25 });
+    goldRim.renderOrder = 60;  // Ensure it can obscure Hebrew name labels when appropriate
+    group.add(goldRim);
     group.add(makeBand(config.rCycle1 + 0.05, config.rLetter, config.hLetter, 0x0a0a22, { metalness: 0.35, roughness: 0.55 }));
 
     for (const book of BIBLE_BOOKS) {
@@ -537,14 +540,30 @@ export function BibleWheelScene(props: BibleWheelSceneProps) {
       const labelRests: number[] = data?.labelRestZ ?? [2.95, 2.95];
       pair.forEach((label, i) => {
         label.position.z = (labelRests[i] ?? 2.95) + delta;
-        label.renderOrder = 50;
-        if (label.material) {
-          const m = label.material as any;
-          m.transparent = true;
-          m.opacity = 1;
-          m.depthTest = true;
-          m.depthWrite = false;
-          m.needsUpdate = true;
+
+        if (i === 0) {
+          // Glyph: must stay on top of its cell and nearby geometry
+          label.renderOrder = 50;
+          if (label.material) {
+            const m = label.material as any;
+            m.transparent = true;
+            m.opacity = 1;
+            m.depthTest = false;
+            m.depthWrite = false;
+            m.needsUpdate = true;
+          }
+        } else {
+          // Name label (English romanization): same always-on-top treatment as the glyph.
+          // Guarantees the names stay visible on their cells at all angles without needing hover.
+          label.renderOrder = 50;
+          if (label.material) {
+            const m = label.material as any;
+            m.transparent = true;
+            m.opacity = 1;
+            m.depthTest = false;
+            m.depthWrite = false;
+            m.needsUpdate = true;
+          }
         }
       });
     });

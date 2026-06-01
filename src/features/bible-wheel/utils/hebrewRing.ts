@@ -56,10 +56,13 @@ export function createHebrewCells(
   // Place the Hebrew letter cells in the band immediately outside the gold containing ring
   const goldRingOuter = config.rCycle1 + 0.78;
   const cellInner = goldRingOuter + 0.25;   // small clean gap / separation
-  const cellHeight = 1.1;
+  // Make Hebrew cells the same height as the gold rim band (hRim) so their top
+  // surface aligns for a smooth, continuous fit when the cells are placed at their final Z.
+  const cellBaseZ = 2.1;
+  const cellHeight = config.hRim - cellBaseZ;
 
   // Match book wedge bevel style + small inset so each letter cell has fully
-  // visible chamfered edges on all four sides.
+  // visible chamfered edges on all four sides. Bevel scales with the new shorter height.
   const bevel = Math.min(0.5, cellHeight * 0.3);
   const inset = 0.10;
   const cellOuter = config.rLetter - (bevel + 0.12); // prevent overlap with outer gold rim
@@ -104,7 +107,7 @@ export function createHebrewCells(
     const letter = HEBREW_LETTERS[i];
     const rotation = angle - Math.PI / 2;
 
-    const labelZ = cell.position.z + 0.85;
+    const labelZ = cell.position.z + (cellHeight * 0.7 + 0.1);  // sit nicely on the (now shorter) cell surface
     const bandMid = (cellInner + cellOuter) / 2;
 
     // Name position is intentionally kept closer to the inner edge of the band.
@@ -138,10 +141,10 @@ export function createHebrewCells(
     });
     group.add(nameLabel);
 
-    // Make Hebrew labels always render on top of nearby gold ring geometry
-    [glyph, nameLabel].forEach((label) => {
-      configureTroikaLabelOverlay(label, 50);
-    });
+    // Both glyph and English name label must always render on top of their cell
+    // and nearby geometry (including the gold ring) so they stay visible.
+    configureTroikaLabelOverlay(glyph, 50);
+    configureTroikaLabelOverlay(nameLabel, 50);
 
     labelPairs.current[i] = [glyph, nameLabel];
 
