@@ -1,8 +1,8 @@
 # Bible Wheel — React Canon Wheel / Division Block Mode Handoff
 
-**Date:** Current session (post-refinement)  
+**Date:** Current session (lighting + animation + label depth polish)  
 **Project:** `C:\Dev\Grok\biblewheel-react`  
-**Focus:** Live-tunable Canon Wheel (Division / Block Mode) with full per-division artistic control
+**Focus:** Live-tunable Canon Wheel + Presentation tools (View & Lighting panel, entrance animation, label depth best practices)
 
 ---
 
@@ -181,3 +181,57 @@ This document + a recent backup should let anyone pick up the project and contin
 The architecture is now ready for long-term extension. All changes were made via direct filesystem edits with build verification after every step.
 
 Good luck — and may the curves be ever in your favor.
+
+---
+
+## View & Lighting Debug Panel (Critical for Final Presentation)
+
+Located in the gear icon (⚙) → **View & Lighting** tab. This panel was built specifically to solve the final "looks great at most angles but washed out when flat" problems.
+
+### Key Controls
+
+| Control                    | Purpose                                                                 | Typical Useful Range      |
+|---------------------------|-------------------------------------------------------------------------|---------------------------|
+| **Env Intensity**         | Global environment map strength (biggest lever for overall washout)    | 0.5 – 0.85 (0.5 = moody) |
+| **Resting Tilt (X)**      | Final artistic tilt after entrance. Prevents env glare hitting center of cross dead-on when wheel is flat. | ±0.06 to ±0.15 (user favorite: +0.06) |
+| **Center Glow**           | Warm point light directly above the Celtic cross                        | Intensity 0.7–1.1, X/Y offsets to move hotspot |
+| **Celtic Cross Env + Roughness** | Per-material control over environment reflections *only* on the gold cross | Env 0.6–1.0, Roughness 0.20–0.35 |
+
+**Pro tip:**  
+After the entrance animation finishes, open this tab and tweak live while the wheel is sitting at rest. The tilt and center glow offsets update in real time.
+
+### Label Depth / RenderOrder Best Practices (Recent Fix)
+
+- Small book labels (name + number) and Hebrew labels: `depthTest: true`, `depthWrite: false`, `renderOrder: 15` (or 50 for Hebrew).
+- Canon blocks: `renderOrder: 10`
+- Canon curved labels: `renderOrder: 20` (or 100 when fully visible) + `depthTest: false` (intentional overlay during transition)
+
+This combination eliminates both "bold/thick text at glancing angles" and text incorrectly drawing in front of Canon blocks.
+
+---
+
+## Animation Entrance (Current Behavior)
+
+- Duration: ~5.8 seconds (slow and majestic)
+- Starts far away (Z=340)
+- Strong Z spin (~3.1 turns) + visible Y-axis bounce (~35° one way then back)
+- X rocking for shimmer during approach
+- Smoothly eases into the current **Resting Tilt (X)** value from the debug panel in the final phase (no more hard jump)
+- Small artistic final Y offset (~0.08 rad) for better 3D composition
+
+The final tilt + Y offset can (and should) be tuned in the View & Lighting panel until the center cross looks rich even when the wheel is at its "rest" pose.
+
+---
+
+## Recommended Final Polish Workflow (2026)
+
+1. Hard refresh.
+2. Let the entrance play out.
+3. Open gear → **View & Lighting**.
+4. Set global **Env Intensity** to ~0.5 (great moody low-light look).
+5. Adjust **Resting Tilt (X)** until the center cross stops being washed out when flat.
+6. Use **Center Glow X/Y** to move any remaining hotspot off the middle of the cross.
+7. Fine-tune **Celtic Cross Env Intensity / Roughness** for the gold specifically.
+8. When happy with the final resting angle and lighting, note the values (or export settings if you also changed Canon styles).
+
+The combination of the tilt control + per-cross material controls + center glow positioning gives you precise artistic control over the single most difficult presentation problem (flat-view washout on the central cross) without destroying the beautiful lighting at other angles.

@@ -91,6 +91,29 @@ export function BibleWheelScene(props: BibleWheelSceneProps) {
     }
   }, [finalEnvIntensity, scene]);
 
+  // Live adjustment of the resting wheel tilt from the View & Lighting panel.
+  // This lets you fine-tune the angle so the env map glare doesn't hit the center
+  // of the Celtic cross when the wheel is at rest (very useful for presentation).
+  useEffect(() => {
+    if (wheelGroupRef.current) {
+      wheelGroupRef.current.rotation.x = lights.restingTiltX;
+    }
+  }, [lights.restingTiltX]);
+
+  // Live control of environment reflections specifically on the Celtic cross.
+  // This lets you reduce the broad env glare on the flat wheel without darkening everything else.
+  useEffect(() => {
+    crossMaterialsRef.current.forEach((mat) => {
+      if (mat) {
+        (mat as any).envMapIntensity = lights.crossEnvMapIntensity ?? 0.9;
+        if (lights.crossRoughness !== undefined) {
+          (mat as any).roughness = lights.crossRoughness;
+        }
+        mat.needsUpdate = true;
+      }
+    });
+  }, [lights.crossEnvMapIntensity, lights.crossRoughness]);
+
   // Division block and label refs are now owned by the useDivisionTransition hook
   // const divisionBlockMeshesRef = useRef<THREE.Mesh[]>([]);
   // const divisionLabelGroupsRef = useRef<TroikaText[][]>([]);
@@ -148,6 +171,14 @@ export function BibleWheelScene(props: BibleWheelSceneProps) {
     t.position.set(opts.x, opts.y, opts.z ?? 0.2);
     t.rotation.z = opts.rotation;
     t.material.side = THREE.DoubleSide;
+
+    const mat = t.material as any;
+    // Safer settings for labels sitting on opaque geometry:
+    // depthTest true + depthWrite false prevents both z-fighting (bold text)
+    // and incorrect overlapping with other objects (e.g. Canon blocks).
+    mat.depthTest = true;
+    mat.depthWrite = false;
+    t.renderOrder = 15; // Higher than wedges (0) and Canon blocks (10)
     t.sync();
     return t;
   }
@@ -382,7 +413,7 @@ export function BibleWheelScene(props: BibleWheelSceneProps) {
     const disc = new THREE.Mesh(
       new THREE.CylinderGeometry(c.rCenter + 0.4, c.rCenter + 0.4, c.hDisc, 96),
       new THREE.MeshPhysicalMaterial({
-        color: 0xeaeefb, metalness: 0.45, roughness: 0.22,
+        color: 0x0a0a22, metalness: 0.45, roughness: 0.22,
         emissive: 0x222244, emissiveIntensity: 0.22,
         clearcoat: 0.6, clearcoatRoughness: 0.18, envMapIntensity: 1.1,
       }),
@@ -401,7 +432,7 @@ export function BibleWheelScene(props: BibleWheelSceneProps) {
       new THREE.MeshPhysicalMaterial({
         color: 0xe2c168, metalness: 0.95, roughness: 0.18,
         emissive: 0xc88e2c, emissiveIntensity: 0.45,
-        clearcoat: 0.8, clearcoatRoughness: 0.12, envMapIntensity: 1.4,
+        clearcoat: 0.8, clearcoatRoughness: 0.12, envMapIntensity: 0.95,
       }),
     );
     halo.position.z = c.hDisc;
@@ -417,7 +448,7 @@ export function BibleWheelScene(props: BibleWheelSceneProps) {
     const goldMat = new THREE.MeshPhysicalMaterial({
       color: 0xead17a, metalness: 0.95, roughness: 0.15,
       emissive: 0xd09a2e, emissiveIntensity: 0.6,
-      clearcoat: 0.85, clearcoatRoughness: 0.1, envMapIntensity: 1.5,
+      clearcoat: 0.85, clearcoatRoughness: 0.1, envMapIntensity: 1.0,
     });
     crossMaterialsRef.current.push(goldMat);
 
@@ -444,10 +475,11 @@ export function BibleWheelScene(props: BibleWheelSceneProps) {
       addInnerGoldRing(group);
     }
 
-    const glow = new THREE.PointLight(0xffd58a, 1.4, 60, 1.6);
+    const glow = new THREE.PointLight(0xffd58a, 0.95, 60, 1.6);
     glow.position.set(0, 0, c.hDisc + c.hCross + 2);
     group.add(glow);
     centerGlowRef.current = glow;
+    debug.centerGlowRef.current = glow;  // Expose to debug lighting panel for live control
 
     crossMaterialsRef.current.forEach(m => {
       (m.userData as any)['baseEmissive'] = (m as any).emissiveIntensity ?? 0.6; // material userData, not mesh
@@ -470,7 +502,7 @@ export function BibleWheelScene(props: BibleWheelSceneProps) {
 
     group.add(makeBand(0, config.rLetter + 1.0, config.hBack, 0x0a0a22, { metalness: 0.2, roughness: 0.85 }));
     group.add(makeBand(config.rLetter, config.rLetter + 0.7, config.hRim, 0xd4b85a, { metalness: 0.9, roughness: 0.25 }));
-    group.add(makeBand(config.rCycle1 + 0.05, config.rLetter, config.hLetter, 0x1f1b5c, { metalness: 0.35, roughness: 0.55 }));
+    group.add(makeBand(config.rCycle1 + 0.05, config.rLetter, config.hLetter, 0x0a0a22, { metalness: 0.35, roughness: 0.55 }));
 
     for (const book of BIBLE_BOOKS) {
       const spoke = ((book.position - 1) % 22) + 1;
@@ -510,7 +542,7 @@ export function BibleWheelScene(props: BibleWheelSceneProps) {
           const m = label.material as any;
           m.transparent = true;
           m.opacity = 1;
-          m.depthTest = false;
+          m.depthTest = true;
           m.depthWrite = false;
           m.needsUpdate = true;
         }
@@ -684,6 +716,7 @@ export function BibleWheelScene(props: BibleWheelSceneProps) {
     controlsRef,
     camera,
     divisionTransition,
+    restingTiltX: lights.restingTiltX,
   });
 
   return (

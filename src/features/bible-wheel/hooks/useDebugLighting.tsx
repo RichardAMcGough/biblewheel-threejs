@@ -11,6 +11,12 @@ export interface DebugLightConfig {
   rim: { x: number; y: number; z: number; intensity: number };
   envIntensity: number;
   ambientIntensity: number;
+  restingTiltX: number;   // Small artistic tilt applied to the wheel at rest (radians, x-axis)
+  centerGlowIntensity: number;
+  centerGlowX: number;
+  centerGlowY: number;
+  crossEnvMapIntensity: number; // Controls how much the environment affects the Celtic cross
+  crossRoughness: number;       // Higher = softer, less glary reflections on the cross
 }
 
 export interface DebugLightingContextValue {
@@ -30,6 +36,7 @@ export interface DebugLightingContextValue {
   fillLightRef: React.MutableRefObject<THREE.DirectionalLight | null>;
   rimLightRef: React.MutableRefObject<THREE.DirectionalLight | null>;
   ambientLightRef: React.MutableRefObject<THREE.AmbientLight | null>;
+  centerGlowRef: React.MutableRefObject<THREE.PointLight | null>;
 }
 
 const DebugLightingContext = createContext<DebugLightingContextValue | null>(null);
@@ -38,8 +45,14 @@ const DEFAULT_LIGHT_CONFIG: DebugLightConfig = {
   key:   { x: -58, y: 68, z: 22, intensity: 1.25 },
   fill:  { x: 38,  y: -28, z: 42, intensity: 0.42 },
   rim:   { x: 0,   y: -50, z: -10, intensity: 0.32 },
-  envIntensity: 1.0,
+  envIntensity: 0.5,
   ambientIntensity: 0.55,
+  restingTiltX: 0.06,
+  centerGlowIntensity: 0.95,
+  centerGlowX: 0,
+  centerGlowY: 0,
+  crossEnvMapIntensity: 0.9,
+  crossRoughness: 0.22,
 };
 
 function DebugLightingProvider({ children }: { children: ReactNode }) {
@@ -51,6 +64,7 @@ function DebugLightingProvider({ children }: { children: ReactNode }) {
   const fillLightRef = useRef<THREE.DirectionalLight | null>(null);
   const rimLightRef = useRef<THREE.DirectionalLight | null>(null);
   const ambientLightRef = useRef<THREE.AmbientLight | null>(null);
+  const centerGlowRef = useRef<THREE.PointLight | null>(null);
 
   const finalAmbientIntensity = lightsEnabled
     ? (lightConfig.ambientIntensity ?? 0.55)
@@ -89,6 +103,18 @@ function DebugLightingProvider({ children }: { children: ReactNode }) {
     if (ambientLightRef.current) {
       ambientLightRef.current.intensity = Math.max(0, finalAmbientIntensity);
     }
+
+    // Center glow (the fuzzy warm light directly above the Celtic cross)
+    if (centerGlowRef.current) {
+      const base = Math.max(0, lightConfig.centerGlowIntensity ?? 0.95);
+      const mult = lightsEnabled ? 1 : 0.1;
+      centerGlowRef.current.intensity = base * mult;
+      (centerGlowRef.current.userData as any).baseIntensity = base;
+
+      // Allow offsetting the light so the bright spot is not dead-center on the flat wheel
+      centerGlowRef.current.position.x = lightConfig.centerGlowX ?? 0;
+      centerGlowRef.current.position.y = lightConfig.centerGlowY ?? 0;
+    }
   }, [lightConfig, lightsEnabled, finalAmbientIntensity]);
 
   const value: DebugLightingContextValue = {
@@ -104,6 +130,7 @@ function DebugLightingProvider({ children }: { children: ReactNode }) {
     fillLightRef,
     rimLightRef,
     ambientLightRef,
+    centerGlowRef,
   };
 
   return (

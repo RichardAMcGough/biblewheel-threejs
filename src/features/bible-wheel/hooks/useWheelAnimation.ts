@@ -15,6 +15,9 @@ interface UseWheelAnimationParams {
   camera: THREE.Camera;
 
   divisionTransition: ReturnType<typeof useDivisionTransition>;
+
+  // Live-adjustable artistic tilt applied when the entrance animation finishes
+  restingTiltX: number;
 }
 
 export function useWheelAnimation(params: UseWheelAnimationParams) {
@@ -28,6 +31,7 @@ export function useWheelAnimation(params: UseWheelAnimationParams) {
     controlsRef,
     camera,
     divisionTransition,
+    restingTiltX,
   } = params;
 
   // Smoothstep helper (kept local to the animation for now)
@@ -49,14 +53,15 @@ export function useWheelAnimation(params: UseWheelAnimationParams) {
       const elapsed = performance.now() / 1000;
 
       // ==================== Dramatic Entrance ====================
-      // Camera starts far away and dollies in.
-      // The wheel spins and tilts back and forth so the metallic/clearcoat surfaces
-      // catch the lights and shimmer nicely as it approaches.
-      // At the end it settles perfectly straight on (no tilt).
+      // Camera starts far away and dollies in slowly.
+      // The wheel spins on Z, does a Y-axis bounce (30° one way then back),
+      // and rocks on X for shimmer.
+      // In the final phase it smoothly settles into the artistic resting tilt
+      // (controlled live in the View & Lighting panel) for a cool off-angle look.
       //
       // NOTE: OrbitControls are disabled during the entrance to prevent fighting
-      // with the manual camera animation (this was causing the "shiver" on zoom).
-      const entranceDuration = config.entranceDuration ?? 3.8; // slower, more majestic
+      // with the manual camera animation.
+      const entranceDuration = config.entranceDuration ?? 5.8; // slower, more majestic
       const t = Math.min(1, elapsed / entranceDuration);
       const ease = 1 - Math.pow(1 - t, 3);
 
@@ -67,7 +72,7 @@ export function useWheelAnimation(params: UseWheelAnimationParams) {
         if (controls) controls.enabled = false;
 
         // Camera dolly from far away into final position
-        const farZ = 265;
+        const farZ = 340; // start even further for more drama
         const finalZ = 90;
         camera.position.z = farZ + (finalZ - farZ) * ease;
         camera.lookAt(0, 0, 6);
@@ -76,16 +81,36 @@ export function useWheelAnimation(params: UseWheelAnimationParams) {
         const s = 0.88 + 0.12 * ease;
         group.scale.set(s, s, s);
 
-        // Spinning (settles to straight orientation)
-        const numSpins = 2.6;
+        // === New cinematic entrance motion ===
         const spinEase = 1 - Math.pow(1 - t, 2.6);
+
+        // Strong Z spin (like before)
+        const numSpins = 3.1;
         const spin = (1 - spinEase) * numSpins * Math.PI * 2;
         group.rotation.z = spin;
 
-        // Tilting back and forth during approach for light shimmer
-        const tiltAmplitude = (1 - ease) * 0.32;
-        const rock = Math.sin(t * Math.PI * 2.8) * tiltAmplitude;
-        group.rotation.x = rock;
+        // Y-axis bounce (rotation around vertical axis).
+        // The wheel swings ~30-35° one direction on Y, then back the other way.
+        // Large Y rotation would eventually show the back of the wheel.
+        const yBounceAmplitude = Math.PI / 6 * 1.15; // ~35° peak swing for visibility
+        const yBounce = Math.sin(t * Math.PI * 2.0) * yBounceAmplitude * Math.pow(1 - t, 0.65);
+
+        // X motion: dramatic rocking early, then smoothly settle into the final resting tilt
+        const tiltAmplitude = (1 - ease) * 0.38;
+        const rock = Math.sin(t * Math.PI * 3.1) * tiltAmplitude;
+
+        const finalTilt = restingTiltX ?? -0.12;
+
+        // In the last 45% of the animation, blend toward the final artistic tilt
+        const settleStart = 0.55;
+        let settleFactor = 0;
+        if (t > settleStart) {
+          settleFactor = (t - settleStart) / (1 - settleStart);
+          settleFactor = Math.pow(settleFactor, 1.8); // nice easing into final pose
+        }
+
+        group.rotation.x = rock * (1 - settleFactor) + finalTilt * settleFactor;
+        group.rotation.y = yBounce * (1 - settleFactor);   // Y bounce eases out as we settle into final off-angle pose
 
       } else {
         // Entrance finished — hand control back to OrbitControls
@@ -94,8 +119,9 @@ export function useWheelAnimation(params: UseWheelAnimationParams) {
           controls.update?.();
         }
 
-        // Lock final clean orientation (straight on, no tilt)
-        group.rotation.x = 0;
+        // Final settled orientation (uses live value from the View & Lighting panel)
+        group.rotation.x = restingTiltX ?? -0.12;
+        group.rotation.y = 0.08; // subtle final Y angle for better off-angle composition
         group.rotation.z = 0;
         group.scale.set(1, 1, 1);
       }
@@ -107,7 +133,8 @@ export function useWheelAnimation(params: UseWheelAnimationParams) {
         (m as any).emissiveIntensity = base * pulse;
       });
       if (centerGlowRef.current) {
-        centerGlowRef.current.intensity = 1.0 + 0.5 * pulse;
+        const base = (centerGlowRef.current.userData as any).baseIntensity ?? 0.95;
+        centerGlowRef.current.intensity = base * (0.8 + 0.2 * pulse);
       }
 
       // Delegate Canon transition progress + block/label visuals
@@ -134,10 +161,14 @@ export function useWheelAnimation(params: UseWheelAnimationParams) {
         if (data?.labels) {
           data.labels.forEach((label: any) => {
             if (label.material) {
-              (label.material as any).transparent = true;
-              (label.material as any).opacity = smallLabelOpacity;
-              (label.material as any).needsUpdate = true;
+              const m = label.material as any;
+              m.transparent = true;
+              m.opacity = smallLabelOpacity;
+              m.depthTest = true;
+              m.depthWrite = false;
+              m.needsUpdate = true;
             }
+            label.renderOrder = 15;
             label.sync();
           });
         }
