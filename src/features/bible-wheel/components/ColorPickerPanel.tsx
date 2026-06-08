@@ -8,9 +8,11 @@ interface ColorPickerPanelProps {
   show: boolean;
   divisionColors: Record<DivisionKey, string>;
   divisionLabelStyles: DivisionLabelStyles;
+  bookLabelsRadial?: boolean;
 
   onColorChange: (key: DivisionKey, hex: string) => void;
   onLabelStyleChange: (key: DivisionKey, partial: Partial<{ fontSize: number; letterSpacing: number; font: string; centerOffset?: number }>) => void;
+  onBookLabelsRadialChange?: (value: boolean) => void;
   onReset: () => void;
   onResetLabelStyles: () => void;
   onExport: () => void;
@@ -21,8 +23,11 @@ export function ColorPickerPanel({
   show,
   divisionColors,
   divisionLabelStyles,
+  bookLabelsRadial = false,
+
   onColorChange,
   onLabelStyleChange,
+  onBookLabelsRadialChange,
   onReset,
   onResetLabelStyles,
   onExport,
@@ -73,6 +78,21 @@ export function ColorPickerPanel({
 
       {activeTab === 'styles' && (
         <>
+          {/* Global book label orientation toggle (experimental / artistic) */}
+          <div style={{ margin: '0 0 12px', paddingBottom: '8px', borderBottom: '1px solid #333' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: '13px' }}>
+              <input
+                type="checkbox"
+                checked={!!bookLabelsRadial}
+                onChange={(e) => onBookLabelsRadialChange?.(e.target.checked)}
+              />
+              <span>Align all book names along spokes (radial)</span>
+            </label>
+            <div style={{ fontSize: '10px', opacity: 0.65, marginLeft: 22, marginTop: 2 }}>
+              Like the inner cycle of 22 epistles. Toggle to preview.
+            </div>
+          </div>
+
           <h3>Canon Block Styles</h3>
 
           {DIVISIONS.map(d => {

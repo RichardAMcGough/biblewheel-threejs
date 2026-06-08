@@ -93,6 +93,7 @@ export function BibleWheel({ config: userConfig, initialBookPosition, onBookSele
       <div className="bible-wheel">
         <div className="renderer-container">
           <Canvas
+          frameloop="demand"
           camera={{ fov: 40, near: 0.5, far: 500, position: [0, -22, 90] }}
           style={{ background: 'transparent' }}
           gl={{
@@ -114,6 +115,7 @@ export function BibleWheel({ config: userConfig, initialBookPosition, onBookSele
             setWheelGroupRef={setWheelGroup}
             divisionLabelStyles={settings.divisionLabelStyles}
             divisionDisplay={settings.divisionDisplay}
+            bookLabelsRadial={settings.bookLabelsRadial}
           />
         </Canvas>
       </div>
@@ -128,8 +130,10 @@ export function BibleWheel({ config: userConfig, initialBookPosition, onBookSele
         show={showOptions}
         divisionColors={settings.divisionColors}
         divisionLabelStyles={settings.divisionLabelStyles}
+        bookLabelsRadial={settings.bookLabelsRadial}
         onColorChange={settings.setDivisionColor}
         onLabelStyleChange={settings.setDivisionLabelStyle}
+        onBookLabelsRadialChange={settings.setBookLabelsRadial}
         onReset={settings.resetColors}
         onResetLabelStyles={settings.resetLabelStyles}
         onExport={settings.exportSettings}

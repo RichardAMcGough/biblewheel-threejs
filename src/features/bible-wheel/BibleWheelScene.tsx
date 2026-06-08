@@ -54,6 +54,8 @@ interface BibleWheelSceneProps {
   setWheelGroupRef?: (group: THREE.Group | null) => void;
   divisionLabelStyles: import('./bible-wheel.types').DivisionLabelStyles;
   divisionDisplay?: Record<import('./bible-wheel.types').DivisionKey, { label: string; canonLabel?: string | string[] }>;
+  /** When true, book name+number labels on *all* cycles use radial (spoke-aligned) orientation like the inner epistles. */
+  bookLabelsRadial?: boolean;
 }
 
 export function BibleWheelScene(props: BibleWheelSceneProps) {
@@ -67,9 +69,10 @@ export function BibleWheelScene(props: BibleWheelSceneProps) {
     setWheelGroupRef: _ignoredSetWheelGroupRef,
     divisionLabelStyles,
     divisionDisplay = {},
+    bookLabelsRadial = false,
   } = props;
 
-  const { scene, camera, gl } = useThree();
+  const { scene, camera, gl, invalidate } = useThree();
 
   const controlsRef = useRef<any>(null);
   const wheelGroupRef = useRef<THREE.Group>(null!);
@@ -88,8 +91,9 @@ export function BibleWheelScene(props: BibleWheelSceneProps) {
   useEffect(() => {
     if (scene) {
       scene.environmentIntensity = finalEnvIntensity;
+      invalidate();
     }
-  }, [finalEnvIntensity, scene]);
+  }, [finalEnvIntensity, scene, invalidate]);
 
   // Live adjustment of the resting wheel tilt from the View & Lighting panel.
   // This lets you fine-tune the angle so the env map glare doesn't hit the center
@@ -97,8 +101,9 @@ export function BibleWheelScene(props: BibleWheelSceneProps) {
   useEffect(() => {
     if (wheelGroupRef.current) {
       wheelGroupRef.current.rotation.x = lights.restingTiltX;
+      invalidate();
     }
-  }, [lights.restingTiltX]);
+  }, [lights.restingTiltX, invalidate]);
 
   // Live control of environment reflections specifically on the Celtic cross.
   // This lets you reduce the broad env glare on the flat wheel without darkening everything else.
@@ -112,7 +117,8 @@ export function BibleWheelScene(props: BibleWheelSceneProps) {
         mat.needsUpdate = true;
       }
     });
-  }, [lights.crossEnvMapIntensity, lights.crossRoughness]);
+    invalidate();
+  }, [lights.crossEnvMapIntensity, lights.crossRoughness, invalidate]);
 
   // Division block and label refs are now owned by the useDivisionTransition hook
   // const divisionBlockMeshesRef = useRef<THREE.Mesh[]>([]);
@@ -125,6 +131,12 @@ export function BibleWheelScene(props: BibleWheelSceneProps) {
 
   const crossMaterialsRef = useRef<THREE.Material[]>([]);
   const centerGlowRef = useRef<THREE.PointLight | null>(null);
+
+  // Track latest value for label rebuild logic without stale closures in the empty-dep build effect
+  const bookLabelsRadialRef = useRef(bookLabelsRadial);
+  useEffect(() => {
+    bookLabelsRadialRef.current = bookLabelsRadial;
+  }, [bookLabelsRadial]);
 
   // transitionProgressRef moved into useDivisionTransition hook (Step 2)
   const prevDivisionModeRef = useRef(divisionMode);
@@ -183,6 +195,126 @@ export function BibleWheelScene(props: BibleWheelSceneProps) {
     return t;
   }
 
+  /**
+   * Creates (or recreates) the two small English labels (short name + number)
+   * for a book wedge. `forceRadial` makes the label oriented along the spoke
+   * (like the current inner cycle 3 / epistles) instead of the usual tangential layout.
+   */
+  function createBookLabels(
+    book: BibleWheelBook,
+    spoke: number,
+    cycle: number,
+    radii: { inner: number; outer: number },
+    depth: number,
+    bevel: number,
+    group: THREE.Group,
+    forceRadial: boolean
+  ): { nameLabel: TroikaText; numLabel: TroikaText; labelZ: number } {
+    const angle = spokeCenterAngle(spoke);
+    const isInnerCycle = cycle === 3;
+
+    const nameIsRadial = forceRadial || isInnerCycle;
+
+    const span = radii.outer - radii.inner;
+
+    // When forcing radial alignment on outer cycles, we keep the "name above number"
+    // stack from the tangential layout but rotate the whole pair to read along the spoke.
+    // Because the label rotates, the stack that was *radial* in the tangential layout
+    // (name outer / number inner) becomes a *tangential* offset here: both lines sit at the
+    // same mid radius and are separated by a small angle, so the name stays visually above
+    // the number instead of stringing out inline along the spoke. The extra tangential room
+    // on the outer cycles makes this fit. Cycle 3 instead keeps both on the same angle with
+    // compact sizes (strung along the spoke) because its cells are too narrow tangentially.
+
+    let nameAngle = angle;
+    let numAngle = angle;
+    let rName: number;
+    let rNum: number;
+    let rotation: number;
+    let nameSize: number;
+    let numSize: number;
+
+    if (nameIsRadial && isInnerCycle) {
+      // Cycle 3 (inner) radial: compact sizes because narrow angular width.
+      // Name further out (0.72), number inner (0.28), same angle, radial text.
+      rotation = angle + Math.PI;
+      rName = radii.inner + span * 0.72;
+      rNum = radii.inner + span * 0.28;
+      nameSize = Math.min(1.5, span * 0.17);
+      numSize = Math.min(1.05, span * 0.12);
+      nameAngle = angle;
+      numAngle = angle;
+    } else if (nameIsRadial) {
+      // Outer cycles (1 & 2) forced radial:
+      // Take the tangential "NAME above NUMBER" two-line label and rotate it as a single unit
+      // so the text runs along the spoke (angle + Math.PI). Because the whole label rotates,
+      // the stack that was *radial* in the tangential layout (name outer / number inner) must
+      // become a *tangential* offset here: both lines sit at the same mid radius, separated by
+      // a small angle. This keeps the name stacked above the number instead of stringing them
+      // inline along the spoke (which is what the inner-cycle compact treatment does).
+      rotation = angle + Math.PI;
+      const rMid = radii.inner + span * 0.5;
+      rName = rMid;
+      rNum = rMid;
+      nameSize = Math.min(2.1, span * 0.30) * (cycle === 2 ? 0.9 : 1.0);
+      numSize = Math.min(1.5, span * 0.22) * (cycle === 2 ? 0.9 : 1.0);
+      // Tangential gap (world units) between the two line centers → angular offset at rMid.
+      // Name sits on the text's local +Y ("above") side, number on the opposite side.
+      const dTheta = ((nameSize + numSize) * 0.65) / rMid / 2;
+      nameAngle = angle - dTheta;
+      numAngle = angle + dTheta;
+    } else {
+      // Default tangential for outer cycles: name at 0.62, number at 0.28, same angle,
+      // tangential text, large fonts.
+      rotation = angle - Math.PI / 2;
+      rName = radii.inner + span * 0.62;
+      rNum = radii.inner + span * 0.28;
+      nameSize = Math.min(2.1, span * 0.30) * (cycle === 2 ? 0.9 : 1.0);
+      numSize = Math.min(1.5, span * 0.22) * (cycle === 2 ? 0.9 : 1.0);
+      nameAngle = angle;
+      numAngle = angle;
+    }
+
+    const labelZ = depth + bevel + 0.1;
+
+    // Each label must be rotated by its *own* polar angle so a line through the text center
+    // passes through the wheel center (a true radius). When the name/number are offset
+    // tangentially (outer-cycle radial stack), they sit at slightly different angles than the
+    // cell centerline, so they fan by ∓dTheta. Collapses to `rotation` when both are on the
+    // centerline (inner cycle + tangential layout, where nameAngle === numAngle === angle).
+    const nameRotation = rotation + (nameAngle - angle);
+    const numRotation = rotation + (numAngle - angle);
+
+    const nameLabel = makeText({
+      text: book.shortname,
+      font: 'english',
+      fontSize: nameSize,
+      color: 0x141428,
+      x: rName * Math.cos(nameAngle),
+      y: rName * Math.sin(nameAngle),
+      z: labelZ,
+      rotation: nameRotation,
+    });
+    group.add(nameLabel);
+
+    const numLabel = makeText({
+      text: String(book.position),
+      font: 'english',
+      fontSize: numSize,
+      color: 0x2a2a44,
+      x: rNum * Math.cos(numAngle),
+      y: rNum * Math.sin(numAngle),
+      z: labelZ,
+      rotation: numRotation,
+    });
+    group.add(numLabel);
+
+    nameLabel.userData = { originalPosition: nameLabel.position.clone() };
+    numLabel.userData = { originalPosition: numLabel.position.clone() };
+
+    return { nameLabel, numLabel, labelZ };
+  }
+
   function addBookWedge(book: BibleWheelBook, spoke: number, cycle: number, group: THREE.Group) {
     const radii = cycleRadii(cycle, config);
     const { start, length } = wedgeTheta(spoke);
@@ -227,46 +359,16 @@ export function BibleWheelScene(props: BibleWheelSceneProps) {
     wedgeMeshesRef.current.push(mesh);
     group.add(mesh);
 
-    const angle = spokeCenterAngle(spoke);
-    const radial = cycle === 3;
-    const rotation = radial ? angle + Math.PI : angle - Math.PI / 2;
-
-    const span = radii.outer - radii.inner;
-    const rName = radii.inner + span * (radial ? 0.72 : 0.62);
-    const rNum = radii.inner + span * 0.28;
-
-    const nameSize = radial
-      ? Math.min(1.5, span * 0.17)
-      : Math.min(2.1, span * 0.30) * (cycle === 2 ? 0.9 : 1.0);
-    const numSize = radial
-      ? Math.min(1.05, span * 0.12)
-      : Math.min(1.5, span * 0.22) * (cycle === 2 ? 0.9 : 1.0);
-
-    const labelZ = depth + bevel + 0.1;
-
-    const nameLabel = makeText({
-      text: book.shortname,
-      font: 'english',
-      fontSize: nameSize,
-      color: 0x141428,
-      x: rName * Math.cos(angle),
-      y: rName * Math.sin(angle),
-      z: labelZ,
-      rotation,
-    });
-    group.add(nameLabel);
-
-    const numLabel = makeText({
-      text: String(book.position),
-      font: 'english',
-      fontSize: numSize,
-      color: 0x2a2a44,
-      x: rNum * Math.cos(angle),
-      y: rNum * Math.sin(angle),
-      z: labelZ,
-      rotation,
-    });
-    group.add(numLabel);
+    const { nameLabel, numLabel, labelZ } = createBookLabels(
+      book,
+      spoke,
+      cycle,
+      radii,
+      depth,
+      bevel,
+      group,
+      bookLabelsRadial // captured at initial build time
+    );
 
     mesh.userData = {
       book, spoke, cycle,
@@ -274,9 +376,6 @@ export function BibleWheelScene(props: BibleWheelSceneProps) {
       labelRestZ: [labelZ, labelZ],
       originalPosition: mesh.position.clone(),
     } as WedgeUserData;
-
-    nameLabel.userData = { originalPosition: nameLabel.position.clone() };
-    numLabel.userData = { originalPosition: numLabel.position.clone() };
   }
 
   function addCanonicalDividers(group: THREE.Group) {
@@ -666,7 +765,8 @@ export function BibleWheelScene(props: BibleWheelSceneProps) {
 
   useEffect(() => {
     applyColorsToMeshes();
-  }, [divisionColors]);
+    invalidate();
+  }, [divisionColors, invalidate]);
 
   // Lighting is fully managed by the useDebugLighting hook (declarative + imperative updates inside the provider).
 
@@ -706,8 +806,63 @@ export function BibleWheelScene(props: BibleWheelSceneProps) {
     // Restore colors on book wedges in case any materials were touched
     applyColorsToMeshes();
 
+    invalidate();
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [divisionLabelStyles]);
+  }, [divisionLabelStyles, invalidate]);
+
+  // Live rebuild of normal book name/number labels when the radial/spoke alignment toggle changes.
+  // We surgically remove the old Troika labels and create new ones with the updated orientation + sizing.
+  const labelsRebuiltRef = useRef(false);
+  useEffect(() => {
+    if (!labelsRebuiltRef.current) {
+      labelsRebuiltRef.current = true;
+      return; // skip on initial mount — labels were already created during buildWheel
+    }
+
+    const group = wheelGroupRef.current;
+    if (!group || wedgeMeshesRef.current.length === 0) return;
+
+    // Remove existing book labels (name + number) from the scene
+    wedgeMeshesRef.current.forEach((mesh) => {
+      const data = mesh.userData as WedgeUserData | undefined;
+      if (data?.labels) {
+        data.labels.forEach((label: any) => {
+          if (label.parent) label.parent.remove(label);
+          try { (label as any).dispose?.(); } catch {}
+        });
+      }
+    });
+
+    // Recreate labels for every wedge using the *current* radial setting
+    const forceRadial = bookLabelsRadialRef.current;
+    wedgeMeshesRef.current.forEach((mesh) => {
+      const data = mesh.userData as WedgeUserData | undefined;
+      if (!data?.book) return;
+
+      const { book, spoke, cycle } = data;
+      const radii = cycleRadii(cycle, config);
+      const depth = cycleHeight(cycle, config);
+      const bevel = Math.min(0.5, depth * 0.3);
+
+      const { nameLabel, numLabel, labelZ } = createBookLabels(
+        book,
+        spoke,
+        cycle,
+        radii,
+        depth,
+        bevel,
+        group,
+        forceRadial
+      );
+
+      data.labels = [nameLabel, numLabel];
+      data.labelRestZ = [labelZ, labelZ];
+      mesh.userData = data;
+    });
+
+    invalidate();
+  }, [bookLabelsRadial, config, invalidate]);
 
   // ==================== Interaction (encapsulated - Step 3) ====================
 
@@ -721,6 +876,7 @@ export function BibleWheelScene(props: BibleWheelSceneProps) {
     wedgeRestZRef,
     hebrewRing,
     divisionTransition,
+    invalidate,
   });
 
   // ==================== Animation Loop (encapsulated - Step 4) ====================
@@ -736,6 +892,7 @@ export function BibleWheelScene(props: BibleWheelSceneProps) {
     camera,
     divisionTransition,
     restingTiltX: lights.restingTiltX,
+    invalidate,
   });
 
   return (

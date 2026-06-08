@@ -13,6 +13,9 @@ export interface BibleWheelSettings {
   divisionColors: Record<DivisionKey, string>;
   divisionLabelStyles: DivisionLabelStyles;
 
+  /** When true, book name + number labels on all cycles are oriented radially (along spokes), like the inner epistles cycle. */
+  bookLabelsRadial?: boolean;
+
   // Override display names for normal mode and Canon mode
   divisions?: Array<{
     key: DivisionKey;
@@ -49,6 +52,7 @@ export async function loadBibleWheelSettings(): Promise<BibleWheelSettings> {
       exportedAt: json.exportedAt,
       divisionColors: json.divisionColors ?? {},
       divisionLabelStyles: json.divisionLabelStyles ?? {},
+      bookLabelsRadial: json.bookLabelsRadial ?? false,
       divisions: json.divisions ?? undefined,
     };
 
@@ -73,6 +77,7 @@ export async function loadBibleWheelSettings(): Promise<BibleWheelSettings> {
         gospels:       { fontSize: 2.2, letterSpacing: 0.12, font: 'english', centerOffset: 0 },
         epistles:      { fontSize: 2.2, letterSpacing: 0.12, font: 'english', centerOffset: 0 },
       },
+      bookLabelsRadial: false,
     };
 
     cachedSettings = fallback;

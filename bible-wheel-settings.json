@@ -1,6 +1,7 @@
 {
   "version": "1.1",
   "exportedAt": "2026-05-31T13:17:42.706Z",
+  "bookLabelsRadial": false,
   "divisionColors": {
     "torah": "#6307ed",
     "otHistory": "#6e1111",

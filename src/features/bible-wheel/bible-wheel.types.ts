@@ -148,6 +148,7 @@ export const DIVISIONS: Division[] = [
 export const STORAGE_KEY = 'biblewheel:divisionColors';
 export const LABEL_STYLES_STORAGE_KEY = 'biblewheel:divisionLabelStyles';
 export const DIVISION_DISPLAY_STORAGE_KEY = 'biblewheel:divisionDisplay';
+export const BOOK_LABELS_RADIAL_STORAGE_KEY = 'biblewheel:bookLabelsRadial';
 
 export interface DivisionLabelStyle {
   fontSize: number;

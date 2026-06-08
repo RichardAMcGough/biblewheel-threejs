@@ -18,6 +18,9 @@ interface UseWheelInteractionParams {
   // Already-encapsulated subsystems
   hebrewRing: ReturnType<typeof useHebrewRing>;
   divisionTransition: ReturnType<typeof useDivisionTransition>;
+
+  /** From R3F useThree(). Required with frameloop="demand" so hover changes cause a render. */
+  invalidate?: () => void;
 }
 
 export function useWheelInteraction(params: UseWheelInteractionParams) {
@@ -31,6 +34,7 @@ export function useWheelInteraction(params: UseWheelInteractionParams) {
     wedgeRestZRef,
     hebrewRing,
     divisionTransition,
+    invalidate,
   } = params;
 
   const hoveredRef = useRef<THREE.Mesh | null>(null);
@@ -125,6 +129,7 @@ export function useWheelInteraction(params: UseWheelInteractionParams) {
 
         hebrewRing.setSpokeHover(hitSpoke);
         dom.style.cursor = 'pointer';
+        invalidate?.();
         return;
       }
 
@@ -149,6 +154,7 @@ export function useWheelInteraction(params: UseWheelInteractionParams) {
       } else {
         dom.style.cursor = 'default';
       }
+      invalidate?.();
     };
 
     const onClick = (e: MouseEvent) => {
@@ -172,6 +178,7 @@ export function useWheelInteraction(params: UseWheelInteractionParams) {
         hebrewRing.setSpokeHover(null);
       }
       dom.style.cursor = 'default';
+      invalidate?.();
     };
 
     dom.addEventListener('mousemove', onPointerMove);
@@ -201,6 +208,7 @@ export function useWheelInteraction(params: UseWheelInteractionParams) {
     updatePointer,
     pickObject,
     setMeshHover,
+    invalidate,
   ]);
 
   // Expose internal state if the parent ever needs it (currently not required)

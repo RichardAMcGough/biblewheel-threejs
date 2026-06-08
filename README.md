@@ -10,17 +10,17 @@
 
 The Bible Wheel displays the 66 books of the Bible as three concentric cycles arranged around 22 spokes that correspond to the 22 letters of the Hebrew alphabet. Each wheel is called a cycle and contains 22 books. The three cycles subdivide into seven divisions, which when colored create the Canon Wheel:
 
-- **CYLCE 1** — Genesis to Song of Solomon
+- **CYCLE 1** — Genesis to Song of Solomon
   - **Torah (5)** 
   - **OT History (12)** 
   - **Wisdom (5)**  
 
-- **CYLCE 2** — Isaiah to Acts
+- **CYCLE 2** — Isaiah to Acts
   - **Major Prophets (5)** 
   - **Minor Prophets (12)**  
   - **NT History (5)**
 
-- **CYLCE 3** — Romans to Revelation
+- **CYCLE 3** — Romans to Revelation
   - **NT Epistles (22)** 
 
 ![Bible Wheel](./assets/images/biblewheel-screenshot-2026-05-31.png)

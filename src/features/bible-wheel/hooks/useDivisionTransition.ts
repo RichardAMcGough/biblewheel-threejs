@@ -98,27 +98,40 @@ export function useDivisionTransition(options: UseDivisionTransitionOptions): Di
     });
   }, []);
 
-  // Advance transition progress and return the current visual state for the animation loop
+  // Advance transition progress and return the current visual state for the animation loop.
+  // IMPORTANT: We now skip the expensive Troika label.sync() and material updates
+  // when the progress has already reached its target. This prevents continuous
+  // per-frame work (and GPU load) once the Canon cross-fade has settled.
   const updateTransition = useCallback((currentDivisionMode: boolean) => {
     const target = currentDivisionMode ? 1 : 0;
     const speed = 2.2 * (1 / 60);
 
-    if (transitionProgressRef.current !== target) {
-      if (transitionProgressRef.current < target) {
-        transitionProgressRef.current = Math.min(1, transitionProgressRef.current + speed);
+    const prevProgress = transitionProgressRef.current;
+
+    if (prevProgress !== target) {
+      if (prevProgress < target) {
+        transitionProgressRef.current = Math.min(1, prevProgress + speed);
       } else {
-        transitionProgressRef.current = Math.max(0, transitionProgressRef.current - speed);
+        transitionProgressRef.current = Math.max(0, prevProgress - speed);
       }
     }
 
-    const easedP = 1 - Math.pow(1 - transitionProgressRef.current, 3);
+    const progress = transitionProgressRef.current;
+    const progressChanged = Math.abs(progress - prevProgress) > 0.0001;
+
+    const easedP = 1 - Math.pow(1 - progress, 3);
 
     const wedgeOpacity = 1 - easedP;
     const isFullyBlocked = currentDivisionMode && easedP >= 0.95;
     const blocksVisible = easedP > 0.01;
     const blockOpacity = easedP;
 
-    // Apply division block and label visuals
+    // Apply division block and label visuals.
+    // Block materials are cheap; we always keep their final state correct.
+    // Label .sync() (expensive) is skipped once we have settled into a stable state.
+    const isSettled = progress <= 0.0001 || progress >= 0.9999;
+    const shouldSyncLabels = progressChanged || !isSettled;
+
     divisionBlockMeshesRef.current.forEach((block, i) => {
       block.visible = blocksVisible;
       block.renderOrder = 10;
@@ -126,13 +139,9 @@ export function useDivisionTransition(options: UseDivisionTransitionOptions): Di
       mat.opacity = blockOpacity;
       mat.transparent = blockOpacity < 0.99;
 
-      // Critical z-fighting mitigation ONLY during the actual cross-fade overlap.
-      // Once fully in or out of division mode, do NOT touch block.position.z here —
-      // hover lifting (setMeshHover) is responsible for moving the blocks and their labels.
       if (wedgeOpacity > 0.01 && blockOpacity > 0.01) {
         block.position.z = 0.05;
       }
-      // else: leave block.position.z alone so hover can lift the divs freely
 
       const labels = divisionLabelGroupsRef.current[i] || [];
       const force = easedP >= 0.95;
@@ -151,7 +160,10 @@ export function useDivisionTransition(options: UseDivisionTransitionOptions): Di
           m.depthWrite = false;
           m.needsUpdate = true;
         }
-        if (force || bigLabelOpacity > 0.01) label.sync();
+        // Only call the heavy sync when we are moving or just arrived at the end state.
+        if (shouldSyncLabels && (force || bigLabelOpacity > 0.01)) {
+          label.sync();
+        }
       });
     });
 

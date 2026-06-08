@@ -10,6 +10,7 @@ import {
   STORAGE_KEY,
   LABEL_STYLES_STORAGE_KEY,
   DIVISION_DISPLAY_STORAGE_KEY,
+  BOOK_LABELS_RADIAL_STORAGE_KEY,
 } from '../bible-wheel.types';
 
 /**
@@ -34,9 +35,11 @@ export interface UseBibleWheelSettingsReturn {
   divisionColors: Record<DivisionKey, string>;
   divisionLabelStyles: DivisionLabelStyles;
   divisionDisplay: Record<DivisionKey, DivisionDisplay>;
+  bookLabelsRadial: boolean;
 
   setDivisionColor: (key: DivisionKey, hex: string) => void;
   setDivisionLabelStyle: (key: DivisionKey, partial: Partial<DivisionLabelStyle>) => void;
+  setBookLabelsRadial: (value: boolean) => void;
 
   resetColors: () => void;
   resetLabelStyles: () => void; // reloads fresh from JSON + clears related localStorage
@@ -54,6 +57,7 @@ export function useBibleWheelSettings(): UseBibleWheelSettingsReturn {
 
   const [divisionLabelStyles, setDivisionLabelStyles] = useState<DivisionLabelStyles>({} as DivisionLabelStyles);
   const [divisionDisplay, setDivisionDisplay] = useState<Record<DivisionKey, DivisionDisplay>>({} as any);
+  const [bookLabelsRadial, setBookLabelsRadialState] = useState<boolean>(false);
 
   // Track cancellation for the async settings load (strict mode / fast remount safe)
   const cancelledRef = useRef(false);
@@ -130,6 +134,19 @@ export function useBibleWheelSettings(): UseBibleWheelSettingsReturn {
       } catch {}
 
       setDivisionDisplay(display);
+
+      // Book labels radial orientation (global toggle, persisted)
+      let radial = false;
+      if (typeof settings.bookLabelsRadial === 'boolean') {
+        radial = settings.bookLabelsRadial;
+      }
+      try {
+        const raw = localStorage.getItem(BOOK_LABELS_RADIAL_STORAGE_KEY);
+        if (raw !== null) {
+          radial = raw === 'true';
+        }
+      } catch {}
+      setBookLabelsRadialState(radial);
     });
 
     return () => {
@@ -152,6 +169,11 @@ export function useBibleWheelSettings(): UseBibleWheelSettingsReturn {
     setDivisionLabelStyles(next);
     try { localStorage.setItem(LABEL_STYLES_STORAGE_KEY, JSON.stringify(next)); } catch {}
   }, [divisionLabelStyles]);
+
+  const setBookLabelsRadial = useCallback((value: boolean) => {
+    setBookLabelsRadialState(value);
+    try { localStorage.setItem(BOOK_LABELS_RADIAL_STORAGE_KEY, String(value)); } catch {}
+  }, []);
 
   const resetColors = useCallback(() => {
     const next: Record<DivisionKey, string> = {} as any;
@@ -195,6 +217,7 @@ export function useBibleWheelSettings(): UseBibleWheelSettingsReturn {
       exportedAt: new Date().toISOString(),
       divisionColors: { ...divisionColors },
       divisionLabelStyles: { ...divisionLabelStyles },
+      bookLabelsRadial,
       divisions,
     };
     const blob = new Blob([JSON.stringify(settings, null, 2)], { type: 'application/json' });
@@ -254,6 +277,11 @@ export function useBibleWheelSettings(): UseBibleWheelSettingsReturn {
             localStorage.setItem(DIVISION_DISPLAY_STORAGE_KEY, JSON.stringify(nextDisplay));
           } catch {}
         }
+
+        if (typeof data.bookLabelsRadial === 'boolean') {
+          setBookLabelsRadialState(data.bookLabelsRadial);
+          try { localStorage.setItem(BOOK_LABELS_RADIAL_STORAGE_KEY, String(data.bookLabelsRadial)); } catch {}
+        }
       } catch {
         alert('Invalid settings file');
       }
@@ -265,8 +293,10 @@ export function useBibleWheelSettings(): UseBibleWheelSettingsReturn {
     divisionColors,
     divisionLabelStyles,
     divisionDisplay,
+    bookLabelsRadial,
     setDivisionColor,
     setDivisionLabelStyle,
+    setBookLabelsRadial,
     resetColors,
     resetLabelStyles,
     exportSettings,
