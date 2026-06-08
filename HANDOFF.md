@@ -4,6 +4,9 @@
 **Project:** `C:\Dev\Grok\biblewheel-react`  
 **Focus:** Live-tunable Canon Wheel + Presentation tools (View & Lighting panel, entrance animation, label depth best practices)
 
+> **Latest work (2026-06-08): radial book labels + demand-based rendering.**
+> See [Radial Book Labels + Demand Rendering (2026-06-08)](#radial-book-labels--demand-rendering-2026-06-08) at the bottom for the newest changes and the two open behavioral items.
+
 ---
 
 ## Quick Start
@@ -235,3 +238,52 @@ The final tilt + Y offset can (and should) be tuned in the View & Lighting panel
 8. When happy with the final resting angle and lighting, note the values (or export settings if you also changed Canon styles).
 
 The combination of the tilt control + per-cross material controls + center glow positioning gives you precise artistic control over the single most difficult presentation problem (flat-view washout on the central cross) without destroying the beautiful lighting at other angles.
+
+---
+
+## Radial Book Labels + Demand Rendering (2026-06-08)
+
+This session added a global "align book names along the spokes" mode, fixed its geometry, nudged the Cycle 3 labels, and shipped a demand-based render loop. All changes are in `BibleWheelScene.tsx`, the interaction/animation hooks, and the settings plumbing.
+
+### 1. Radial book-label toggle (`bookLabelsRadial`)
+
+- **What it does:** a global checkbox in the gear panel → **Styles** tab ("Align all book names along spokes (radial)") rotates the name+number labels on **all** cycles to read along the spoke, like the inner epistles ring.
+- **Persistence:** stored in `localStorage` (`biblewheel:bookLabelsRadial`, key in `bible-wheel.types.ts`) and in the exported settings JSON; round-trips through Export/Import. Wired through `useBibleWheelSettings` → `BibleWheel.tsx` → `BibleWheelScene` + `ColorPickerPanel`.
+- **Where the label geometry lives:** label creation was extracted into **`createBookLabels()`** in `BibleWheelScene.tsx`. Both the initial `buildWheel` path and a live-rebuild `useEffect` (keyed on `bookLabelsRadial`) call it, so toggling re-lays the labels without a full rebuild.
+
+### 2. The "name above number" stacking fix (outer cycles)
+
+When radial mode is forced on cycles 1 & 2, the two lines must stay stacked (name above number), **not** strung inline along the spoke. The trick:
+
+- Both lines sit at the **same mid radius** (`rMid = inner + span*0.5`).
+- They're separated by a small **tangential angle** `dTheta = ((nameSize + numSize) * 0.65) / rMid / 2` (name at `angle - dTheta`, number at `angle + dTheta`). The tangential gap is the rotated-as-a-unit equivalent of the radial name/number gap used in the tangential layout.
+- **True-radius rotation:** each label is rotated by its **own** polar angle, `rotation + (labelAngle - angle)`, so a line drawn through the text center passes through the wheel center. Without this the offset pair leans slightly off-radius. (Collapses to the shared `rotation` for the inner cycle and the default tangential layout, where both lines are on the centerline.)
+- The `0.65` factor controls **both** the spacing and the per-label fan; split it into two factors if you ever want to decouple them.
+
+### 3. Cycle 3 (inner) tuning
+
+- **Inward shift:** name/number radial factors lowered from `0.72 / 0.28` → **`0.64 / 0.20`** (same gap, whole stack moved toward center) so long names ("1 Thess") stop touching the outer edge and the pair uses the slack that was always at the inner edge.
+- **Hover lift:** Cycle 3 is the **tallest** ring (`hCycle3 = 2.4` vs `hCycle1 = 1.0`) and abuts the empty center, so a full `hoverLiftZ` (1.2) reveals its inner side-wall and reads as the cell "expanding toward the center." `setMeshHover` now uses a gentler lift on cycle 3 only: `liftAmount * 0.6` (`useWheelInteraction.ts`). **Note:** this only partly helps — the remaining "bulge" is really the hover **emissive boost** (`0.04 → 0.55`) lighting the tall inner wall, *not* the lift. If this resurfaces, soften/zero the emissive on the cycle-3 side walls rather than shrinking the lift further. Left "good enough for now."
+
+### 4. Demand-based rendering (perf)
+
+- `Canvas` now uses **`frameloop="demand"`**. `invalidate()` (from `useThree`) is threaded through `useWheelInteraction`, `useWheelAnimation`, `useDivisionTransition`, and the color/style/tilt effects so the scene re-renders on demand.
+- The RAF loop in `useWheelAnimation` **self-terminates** once the entrance finishes and any Canon cross-fade settles; `useDivisionTransition` skips the expensive Troika `label.sync()` when progress is settled. This drops idle GPU load substantially.
+- **Listener-leak fix:** the OrbitControls `'change' → invalidate` handler is now captured at effect scope and detached in the effect teardown (it previously re-added a listener on every effect re-run and never removed it).
+
+### ⚠️ Two open behavioral items (by design, not yet addressed)
+
+1. **Idle cross pulse freezes.** The Celtic-cross emissive pulse + center-glow pulse are computed inside the RAF loop, which now stops when idle — so the advertised "idle pulse" halts once the wheel settles. If you want a perpetual ambient pulse, it needs its own always-on `invalidate()` tick (or move the pulse off the terminating loop).
+2. **OrbitControls damping glide.** `enableDamping` is on (`dampingFactor 0.08`). Under demand rendering the post-release inertia depends on the `'change'→invalidate` loop self-sustaining; flick-and-release and confirm it glides to a stop rather than snapping. If it snaps, keep the RAF alive a few frames after the last controls change.
+
+### Files touched this session
+
+- `BibleWheelScene.tsx` — `createBookLabels()` (radial branches + per-label rotation), live-rebuild effect, `bookLabelsRadial` prop, `invalidate()` wiring.
+- `hooks/useWheelInteraction.ts` — cycle-3 hover lift + `invalidate()` on hover/leave.
+- `hooks/useWheelAnimation.ts` — demand loop + self-termination + listener-leak fix.
+- `hooks/useDivisionTransition.ts` — skip `sync()` when settled.
+- `hooks/useBibleWheelSettings.ts`, `settings.ts`, `bible-wheel.types.ts`, `components/ColorPickerPanel.tsx`, `BibleWheel.tsx` — `bookLabelsRadial` toggle + persistence.
+- `bible-wheel-settings.json`, `public/data/bible-wheel-settings.json` — `bookLabelsRadial: false` added.
+- `README.md` — `CYLCE → CYCLE` typo fixes.
+
+Committed as "feat: radial (spoke-aligned) book labels + demand-based rendering" (`5980643`), **except** the Cycle 3 inward-shift and the cycle-3 hover-lift tweak, which were made after that commit and are **still uncommitted** as of this handoff.

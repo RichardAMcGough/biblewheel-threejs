@@ -73,10 +73,16 @@ export function useWheelInteraction(params: UseWheelInteractionParams) {
 
   const setMeshHover = useCallback(
     (mesh: THREE.Mesh | null, hovered: boolean) => {
-      const liftAmount = config.hoverLiftZ ?? 1.2;
-      const lift = hovered ? liftAmount : 0;
-
       if (!mesh) return;
+
+      const liftAmount = config.hoverLiftZ ?? 1.2;
+
+      // Cycle 3 (inner) is the tallest ring and abuts the empty center, so a full-height lift
+      // reveals its inner side-wall and exaggerates perspective magnification — reading as the
+      // cell expanding toward the center rather than simply rising. Use a gentler lift there.
+      const cycle = (mesh.userData as { cycle?: number } | undefined)?.cycle;
+      const effectiveLift = cycle === 3 ? liftAmount * 0.6 : liftAmount;
+      const lift = hovered ? effectiveLift : 0;
 
       const rest = wedgeRestZRef.current.get(mesh) ?? 0;
       mesh.position.z = rest + lift;

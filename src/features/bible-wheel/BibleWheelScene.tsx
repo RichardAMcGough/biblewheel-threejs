@@ -236,10 +236,12 @@ export function BibleWheelScene(props: BibleWheelSceneProps) {
 
     if (nameIsRadial && isInnerCycle) {
       // Cycle 3 (inner) radial: compact sizes because narrow angular width.
-      // Name further out (0.72), number inner (0.28), same angle, radial text.
+      // The whole name+number stack is nudged toward the center (0.64 / 0.20 instead of
+      // 0.72 / 0.28) so long names ("1 Thess") no longer touch the outer edge and the pair
+      // uses up the slack that was always left at the inner edge. Same gap, shifted inward.
       rotation = angle + Math.PI;
-      rName = radii.inner + span * 0.72;
-      rNum = radii.inner + span * 0.28;
+      rName = radii.inner + span * 0.64;
+      rNum = radii.inner + span * 0.20;
       nameSize = Math.min(1.5, span * 0.17);
       numSize = Math.min(1.05, span * 0.12);
       nameAngle = angle;
