@@ -123,7 +123,8 @@ body {
 
 /* Gear / Options button */
 .gear-btn,
-.division-btn {
+.division-btn,
+.reset-view-btn {
   position: absolute;
   top: 16px;
   width: 38px;
@@ -152,8 +153,14 @@ body {
   font-size: 16px;
 }
 
+.reset-view-btn {
+  right: 108px;
+  font-size: 19px;
+}
+
 .gear-btn:hover,
-.division-btn:hover {
+.division-btn:hover,
+.reset-view-btn:hover {
   background: rgba(40, 40, 65, 0.95);
 }
 
@@ -163,6 +170,10 @@ body {
 
 .division-btn:hover {
   transform: scale(1.05);
+}
+
+.reset-view-btn:hover {
+  transform: rotate(-45deg);
 }
 
 .gear-btn.open {

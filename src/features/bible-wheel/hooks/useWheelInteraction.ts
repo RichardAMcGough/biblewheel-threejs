@@ -19,6 +19,9 @@ interface UseWheelInteractionParams {
   hebrewRing: ReturnType<typeof useHebrewRing>;
   divisionTransition: ReturnType<typeof useDivisionTransition>;
 
+  /** Called when the user double-clicks empty scene area (no wedge/cell hit). */
+  onEmptyDoubleClick?: () => void;
+
   /** From R3F useThree(). Required with frameloop="demand" so hover changes cause a render. */
   invalidate?: () => void;
 }
@@ -34,6 +37,7 @@ export function useWheelInteraction(params: UseWheelInteractionParams) {
     wedgeRestZRef,
     hebrewRing,
     divisionTransition,
+    onEmptyDoubleClick,
     invalidate,
   } = params;
 
@@ -175,6 +179,12 @@ export function useWheelInteraction(params: UseWheelInteractionParams) {
       }
     };
 
+    const onDoubleClick = (e: MouseEvent) => {
+      updatePointer(e);
+      // Only treat double-clicks on empty space (no wedge/cell) as a view reset.
+      if (pickObject() === null) onEmptyDoubleClick?.();
+    };
+
     const onPointerLeave = () => {
       if (hoveredRef.current) {
         setMeshHover(hoveredRef.current, false);
@@ -189,11 +199,13 @@ export function useWheelInteraction(params: UseWheelInteractionParams) {
 
     dom.addEventListener('mousemove', onPointerMove);
     dom.addEventListener('click', onClick);
+    dom.addEventListener('dblclick', onDoubleClick);
     dom.addEventListener('mouseleave', onPointerLeave);
 
     return () => {
       dom.removeEventListener('mousemove', onPointerMove);
       dom.removeEventListener('click', onClick);
+      dom.removeEventListener('dblclick', onDoubleClick);
       dom.removeEventListener('mouseleave', onPointerLeave);
 
       if (hoveredRef.current) {
@@ -214,6 +226,7 @@ export function useWheelInteraction(params: UseWheelInteractionParams) {
     updatePointer,
     pickObject,
     setMeshHover,
+    onEmptyDoubleClick,
     invalidate,
   ]);
 

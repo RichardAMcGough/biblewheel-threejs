@@ -19,6 +19,9 @@ interface UseWheelAnimationParams {
   // Live-adjustable artistic tilt applied when the entrance animation finishes
   restingTiltX: number;
 
+  /** User roll (rotation around the wheel's z-axis) from right-click drag; applied at rest. */
+  wheelRollRef?: React.MutableRefObject<number>;
+
   /** From R3F useThree(). Call this after mutating the scene so demand-mode Canvas will render. */
   invalidate?: () => void;
 }
@@ -35,6 +38,7 @@ export function useWheelAnimation(params: UseWheelAnimationParams) {
     camera,
     divisionTransition,
     restingTiltX,
+    wheelRollRef,
     invalidate,
   } = params;
 
@@ -125,7 +129,7 @@ export function useWheelAnimation(params: UseWheelAnimationParams) {
         // Final settled orientation (live value from View & Lighting panel)
         group.rotation.x = restingTiltX ?? -0.12;
         group.rotation.y = 0.08;
-        group.rotation.z = 0;
+        group.rotation.z = wheelRollRef?.current ?? 0; // preserve user right-drag roll
         group.scale.set(1, 1, 1);
       }
 

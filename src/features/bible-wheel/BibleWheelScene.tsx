@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useCallback } from 'react';
 import { useThree } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
@@ -56,6 +56,8 @@ interface BibleWheelSceneProps {
   divisionDisplay?: Record<import('./bible-wheel.types').DivisionKey, { label: string; canonLabel?: string | string[] }>;
   /** When true, book name+number labels on *all* cycles use radial (spoke-aligned) orientation like the inner epistles. */
   bookLabelsRadial?: boolean;
+  /** Scene populates this with a "reset view" fn (orbit + zoom + roll) so outside UI can call it. */
+  resetViewRef?: React.MutableRefObject<(() => void) | null>;
 }
 
 export function BibleWheelScene(props: BibleWheelSceneProps) {
@@ -70,6 +72,7 @@ export function BibleWheelScene(props: BibleWheelSceneProps) {
     divisionLabelStyles,
     divisionDisplay = {},
     bookLabelsRadial = false,
+    resetViewRef,
   } = props;
 
   const { scene, camera, gl, invalidate } = useThree();
@@ -131,6 +134,11 @@ export function BibleWheelScene(props: BibleWheelSceneProps) {
 
   const crossMaterialsRef = useRef<THREE.Material[]>([]);
   const centerGlowRef = useRef<THREE.PointLight | null>(null);
+
+  // User roll (rotation around the wheel's own z-axis) from right-click drag.
+  // Held in a ref so the animation loop's rest-pose code can keep applying it
+  // instead of resetting rotation.z to 0 after the entrance / Canon transitions.
+  const wheelRollRef = useRef(0);
 
   // Track latest value for label rebuild logic without stale closures in the empty-dep build effect
   const bookLabelsRadialRef = useRef(bookLabelsRadial);
@@ -866,6 +874,116 @@ export function BibleWheelScene(props: BibleWheelSceneProps) {
     invalidate();
   }, [bookLabelsRadial, config, invalidate]);
 
+  // ==================== Reset view ====================
+  // Smoothly animates the camera (orbit angle + zoom) and the right-drag roll back to the
+  // default home pose, instead of snapping. Exposed via resetViewRef so the reset button
+  // (outside the Canvas) and the empty-space double-click (useWheelInteraction) can call it.
+  const resetAnimRef = useRef<number | null>(null);
+
+  const resetView = useCallback(() => {
+    const controls = controlsRef.current;
+    const group = wheelGroupRef.current;
+    if (!controls) return;
+
+    // Cancel any in-flight reset so repeated presses don't stack tweens.
+    if (resetAnimRef.current !== null) cancelAnimationFrame(resetAnimRef.current);
+
+    const startPos = camera.position.clone();
+    const startTarget = controls.target.clone();
+    const startRoll = wheelRollRef.current;
+    const endPos = controls.position0.clone();   // home camera position (captured at mount)
+    const endTarget = controls.target0.clone();  // home orbit target
+
+    const duration = 600; // ms
+    const startTime = performance.now();
+
+    controls.enabled = false; // don't let OrbitControls fight the tween
+
+    const step = () => {
+      const t = Math.min(1, (performance.now() - startTime) / duration);
+      const e = 1 - Math.pow(1 - t, 3); // easeOutCubic
+
+      camera.position.lerpVectors(startPos, endPos, e);
+      controls.target.lerpVectors(startTarget, endTarget, e);
+      camera.lookAt(controls.target);
+
+      wheelRollRef.current = startRoll * (1 - e); // → 0
+      if (group) group.rotation.z = wheelRollRef.current;
+
+      invalidate?.();
+
+      if (t < 1) {
+        resetAnimRef.current = requestAnimationFrame(step);
+      } else {
+        // Land exactly on home and hand control back to OrbitControls.
+        resetAnimRef.current = null;
+        camera.position.copy(endPos);
+        controls.target.copy(endTarget);
+        wheelRollRef.current = 0;
+        if (group) group.rotation.z = 0;
+        controls.enabled = true;
+        controls.update?.();
+        invalidate?.();
+      }
+    };
+
+    resetAnimRef.current = requestAnimationFrame(step);
+  }, [camera, invalidate]);
+
+  useEffect(() => {
+    if (resetViewRef) resetViewRef.current = resetView;
+    return () => { if (resetViewRef) resetViewRef.current = null; };
+  }, [resetViewRef, resetView]);
+
+  // Cancel an in-flight reset tween if the scene unmounts.
+  useEffect(() => () => {
+    if (resetAnimRef.current !== null) cancelAnimationFrame(resetAnimRef.current);
+  }, []);
+
+  // ==================== Roll (right-click drag) ====================
+  // Right-button horizontal drag spins the wheel around its own z-axis (the central cross).
+  // Pan is disabled on OrbitControls, so the right button is free for this. We accumulate
+  // into wheelRollRef and write rotation.z directly (the animation loop's rest pose also
+  // reads wheelRollRef, so the roll survives Canon transitions).
+  useEffect(() => {
+    const dom = gl.domElement;
+    if (!dom) return;
+
+    const ROLL_PER_PX = 0.005; // radians of spin per pixel of horizontal drag
+    let dragging = false;
+    let lastX = 0;
+
+    const onPointerDown = (e: MouseEvent) => {
+      if (e.button !== 2) return; // right button only
+      dragging = true;
+      lastX = e.clientX;
+    };
+
+    const onPointerMove = (e: MouseEvent) => {
+      if (!dragging) return;
+      const dx = e.clientX - lastX;
+      lastX = e.clientX;
+      wheelRollRef.current += dx * ROLL_PER_PX;
+      if (wheelGroupRef.current) wheelGroupRef.current.rotation.z = wheelRollRef.current;
+      invalidate?.();
+    };
+
+    const endDrag = () => { dragging = false; };
+    const onContextMenu = (e: MouseEvent) => e.preventDefault(); // suppress browser menu on right-drag
+
+    dom.addEventListener('mousedown', onPointerDown);
+    window.addEventListener('mousemove', onPointerMove);
+    window.addEventListener('mouseup', endDrag);
+    dom.addEventListener('contextmenu', onContextMenu);
+
+    return () => {
+      dom.removeEventListener('mousedown', onPointerDown);
+      window.removeEventListener('mousemove', onPointerMove);
+      window.removeEventListener('mouseup', endDrag);
+      dom.removeEventListener('contextmenu', onContextMenu);
+    };
+  }, [gl, wheelGroupRef, invalidate]);
+
   // ==================== Interaction (encapsulated - Step 3) ====================
 
   useWheelInteraction({
@@ -878,6 +996,7 @@ export function BibleWheelScene(props: BibleWheelSceneProps) {
     wedgeRestZRef,
     hebrewRing,
     divisionTransition,
+    onEmptyDoubleClick: resetView,
     invalidate,
   });
 
@@ -894,6 +1013,7 @@ export function BibleWheelScene(props: BibleWheelSceneProps) {
     camera,
     divisionTransition,
     restingTiltX: lights.restingTiltX,
+    wheelRollRef,
     invalidate,
   });
 
@@ -939,8 +1059,6 @@ export function BibleWheelScene(props: BibleWheelSceneProps) {
         dampingFactor={0.08}
         minDistance={50}
         maxDistance={160}
-        minPolarAngle={Math.PI * 0.18}
-        maxPolarAngle={Math.PI * 0.62}
         enablePan={false}
         target={[0, 0, 4]}
       />

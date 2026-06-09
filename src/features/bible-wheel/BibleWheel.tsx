@@ -53,6 +53,9 @@ export function BibleWheel({ config: userConfig, initialBookPosition, onBookSele
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Populated by BibleWheelScene with its reset-view fn (orbit + zoom + roll).
+  const resetViewRef = useRef<(() => void) | null>(null);
+
   useEffect(() => {
     if (!initialBookPosition) return;
     const timer = setTimeout(() => {
@@ -116,6 +119,7 @@ export function BibleWheel({ config: userConfig, initialBookPosition, onBookSele
             divisionLabelStyles={settings.divisionLabelStyles}
             divisionDisplay={settings.divisionDisplay}
             bookLabelsRadial={settings.bookLabelsRadial}
+            resetViewRef={resetViewRef}
           />
         </Canvas>
       </div>
@@ -124,6 +128,7 @@ export function BibleWheel({ config: userConfig, initialBookPosition, onBookSele
         divisionMode={divisionMode}
         onToggleOptions={() => setShowOptions(v => !v)}
         onToggleDivisionMode={toggleDivisionMode}
+        onResetView={() => resetViewRef.current?.()}
       />
 
       <ColorPickerPanel
